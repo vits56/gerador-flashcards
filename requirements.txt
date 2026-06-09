@@ -1,0 +1,7 @@
+customtkinter
+PyMuPDF
+google-generativeai
+genanki
+pytest
+pytest-mock
+pyinstaller
