@@ -331,9 +331,12 @@ class FlashcardApp(ctk.CTk):
 
             # 1. Obtenção do conteúdo
             if active_tab == "Arquivo PDF":
-                self.log("📖 Lendo arquivo PDF e extraindo imagens...")
+                self.log("📖 Lendo arquivo PDF e extraindo imagens (isso pode demorar em PDFs grandes)...")
                 parser = PDFParser(self.selected_pdf_path)
-                chunks_with_images = parser.extract_chunks_with_images(chunk_size=8000)
+                chunks_with_images = parser.extract_chunks_with_images(
+                    chunk_size=12000,
+                    progress_callback=self.log
+                )
 
                 filename = os.path.basename(self.selected_pdf_path)
                 deck_title = os.path.splitext(filename)[0].replace(" ", "_")
@@ -374,7 +377,7 @@ class FlashcardApp(ctk.CTk):
             self.save_config()
             api_key = self.api_key_var.get().strip()
             self.log("🤖 Iniciando processamento com Groq (Llama 3.3 70B)...")
-            engine = GroqFlashcardEngine(api_key=api_key)
+            engine = GroqFlashcardEngine(api_key=api_key, log_callback=self.log)
 
             all_flashcards = []
             all_media_files = []

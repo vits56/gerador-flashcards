@@ -85,7 +85,7 @@ class PDFParser:
 
         return images_bytes
 
-    def extract_chunks_with_images(self, chunk_size: int = 8000) -> List[Dict[str, Any]]:
+    def extract_chunks_with_images(self, chunk_size: int = 8000, progress_callback=None) -> List[Dict[str, Any]]:
         """
         Extrai texto e imagens do PDF em conjunto.
         Retorna lista de dicts: {'text': str, 'images': List[bytes]}
@@ -100,7 +100,10 @@ class PDFParser:
 
             # Extrai texto limpo e imagens por página
             pages_data = []
-            for page in doc:
+            for idx, page in enumerate(doc):
+                if progress_callback:
+                    progress_callback(f"📄 Lendo página {idx+1} de {self.page_count}...")
+                
                 page_text = page.get_text()
                 lines = page_text.split('\n')
                 cleaned_lines = []

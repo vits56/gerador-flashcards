@@ -1,7 +1,8 @@
 from groq import Groq
 import json
+import re
 import time
-from typing import List, Dict
+from typing import List, Dict, Callable, Optional
 from pydantic import BaseModel, ValidationError
 
 
@@ -11,13 +12,18 @@ class FlashcardSchema(BaseModel):
 
 
 class GroqFlashcardEngine:
-    def __init__(self, api_key: str, model_name: str = "llama-3.3-70b-versatile"):
+    def __init__(
+        self,
+        api_key: str,
+        model_name: str = "llama-3.3-70b-versatile",
+        log_callback: Optional[Callable[[str], None]] = None
+    ):
         self.api_key = api_key
         self.model_name = model_name
         self.client = Groq(api_key=self.api_key)
+        # Callback para exibir mensagens na UI (substitui print())
+        self._log = log_callback or print
 
-        # IMPORTANT: response_format=json_object exige que o modelo retorne um OBJETO JSON ({}).
-        # Por isso pedimos {"flashcards": [...]} — não uma lista diretamente.
         self.system_instruction = """Você é um professor especialista na criação de flashcards para provas de concursos públicos brasileiros.
 Sua tarefa é analisar o texto fornecido e extrair ABSOLUTAMENTE TODAS as informações que possam ser alvo de questões de prova.
 Você deve criar dezenas de flashcards abrangentes cobrindo:
@@ -29,22 +35,49 @@ Você deve criar dezenas de flashcards abrangentes cobrindo:
 
 Seja exaustivo: não deixe nenhum detalhe de fora.
 
-Retorne APENAS um objeto JSON válido, sem texto adicional, com exatamente esta estrutura:
-{
-  "flashcards": [
-    {
-      "pergunta": "...",
-      "resposta": "..."
-    }
-  ]
-}"""
+Responda EXCLUSIVAMENTE com um JSON válido neste formato, sem texto antes ou depois:
+[
+  {"pergunta": "...", "resposta": "..."}
+]"""
+
+    def _extract_json_from_text(self, text: str) -> list:
+        """
+        Extrai o JSON da resposta do modelo de forma robusta.
+        Suporta resposta pura, dentro de ```json ... ```, ou objeto {flashcards: []}.
+        """
+        # Remove blocos de código markdown se existirem
+        text = re.sub(r'```(?:json)?\s*', '', text).strip().rstrip('`').strip()
+
+        # Tenta parsear diretamente
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, list):
+                return parsed
+            if isinstance(parsed, dict):
+                # Procura qualquer chave cujo valor seja uma lista
+                for v in parsed.values():
+                    if isinstance(v, list):
+                        return v
+            return []
+        except json.JSONDecodeError:
+            pass
+
+        # Tenta encontrar um array JSON no texto (ex: texto antes/depois do JSON)
+        match = re.search(r'\[.*\]', text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                pass
+
+        return []
 
     def generate_flashcards(self, text_chunk: str) -> List[Dict[str, str]]:
         """
-        Envia um bloco de texto para o Groq e retorna lista de dicts {pergunta, resposta}.
-        Retorna lista vazia em caso de erro para isolar a falha sem quebrar o processo todo.
+        Envia um bloco de texto ao Groq e retorna lista de {pergunta, resposta}.
+        Erros são reportados via log_callback em vez de print() invisível.
         """
-        max_retries = 4
+        max_retries = 3
         for attempt in range(max_retries):
             try:
                 response = self.client.chat.completions.create(
@@ -54,28 +87,21 @@ Retorne APENAS um objeto JSON válido, sem texto adicional, com exatamente esta 
                         {
                             "role": "user",
                             "content": (
-                                "Crie o máximo de flashcards úteis possíveis "
-                                "a partir do seguinte texto:\n\n" + text_chunk
+                                "Crie flashcards para TODOS os detalhes "
+                                "do seguinte texto:\n\n" + text_chunk
                             )
                         }
                     ],
-                    temperature=0.4,
-                    response_format={"type": "json_object"},
+                    temperature=0.3,
+                    max_tokens=4096,
+                    # Sem response_format — parseamos manualmente para maior compatibilidade
                 )
 
-                output_text = response.choices[0].message.content
-                parsed = json.loads(output_text)
+                output_text = response.choices[0].message.content or ""
+                raw_flashcards = self._extract_json_from_text(output_text)
 
-                # Extrai a lista de flashcards — aceita tanto {"flashcards": [...]} quanto [...]
-                if isinstance(parsed, list):
-                    raw_flashcards = parsed
-                elif isinstance(parsed, dict):
-                    # Procura qualquer valor que seja uma lista
-                    raw_flashcards = next(
-                        (v for v in parsed.values() if isinstance(v, list)), []
-                    )
-                else:
-                    print("Resposta do modelo em formato inesperado.")
+                if not raw_flashcards:
+                    self._log("     ⚠️ Modelo não retornou flashcards válidos neste bloco.")
                     return []
 
                 # Valida estrutura com Pydantic
@@ -88,25 +114,30 @@ Retorne APENAS um objeto JSON válido, sem texto adicional, com exatamente esta 
                             "resposta": validated.resposta
                         })
                     except ValidationError:
-                        continue  # Ignora cards mal formatados
+                        continue
 
                 return valid_cards
 
-            except json.JSONDecodeError as e:
-                print(f"Erro ao decodificar JSON da resposta: {e}")
-                return []
-
             except Exception as e:
-                error_msg = str(e).lower()
-                is_rate_limit = "429" in error_msg or "rate" in error_msg or "quota" in error_msg
+                error_str = str(e)
+                error_lower = error_str.lower()
+                is_rate_limit = (
+                    "429" in error_str
+                    or "rate" in error_lower
+                    or "quota" in error_lower
+                    or "too many" in error_lower
+                )
 
                 if is_rate_limit and attempt < max_retries - 1:
-                    wait = 30 * (attempt + 1)
-                    print(f"Rate limit atingido. Aguardando {wait}s... (tentativa {attempt + 1}/{max_retries})")
-                    time.sleep(wait)
+                    wait = 60 * (attempt + 1)
+                    self._log(f"     ⏳ Limite da API atingido. Aguardando {wait}s...")
+                    for remaining in range(wait, 0, -5):
+                        time.sleep(5)
+                        self._log(f"        ... {remaining}s restantes")
                     continue
 
-                print(f"Erro na API Groq: {e}. Pulando este bloco.")
+                # Erro real — mostra na UI em vez de sumir no print()
+                self._log(f"     ❌ Erro na API Groq: {error_str}")
                 return []
 
         return []
