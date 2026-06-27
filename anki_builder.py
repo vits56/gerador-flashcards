@@ -1,7 +1,34 @@
 import genanki
 import random
 import os
+import re
 from typing import List, Dict, Tuple
+
+
+def highlight_important(text: str) -> str:
+    """
+    Envolve termos considerados importantes em spans coloridos.
+    - Números, datas, prazos, percentuais → vermelho
+    - Palavras-chave jurídicas/técnicas e termos em destaque → azul
+    """
+    # Números, prazos, percentuais, valores monetários → vermelho
+    text = re.sub(
+        r'\b(\d+(?:[.,]\d+)?(?:\s*(?:dias?|horas?|anos?|meses?|minutos?|segundos?|%|por\s+cento|reais?|R\$))?)\b',
+        r'<span style="color:#e53935;font-weight:bold">\1</span>',
+        text,
+        flags=re.IGNORECASE
+    )
+    # Palavras-chave comuns em concursos → azul
+    keywords = [
+        r'\b(SEMPRE|NUNCA|OBRIGATÓRIO|OBRIGATÓRIA|VEDADO|VEDADA|EXCLUSIVO|EXCLUSIVA|'
+        r'PROIBIDO|PROIBIDA|SOMENTE|APENAS|SALVO|EXCETO|RESSALVADO|NÃO PODE|PODE|'
+        r'INCUMBE|COMPETE|CABE|DEVE|DEVERÁ|PODERÁ|FACULTATIVO|FACULTATIVA|'
+        r'INCONSTITUCIONAL|CONSTITUCIONAL|NULO|NULA|ANULÁVEL|VICIADO)\b'
+    ]
+    for kw in keywords:
+        text = re.sub(kw, r'<span style="color:#1565c0;font-weight:bold">\g<0></span>', text, flags=re.IGNORECASE)
+    return text
+
 
 class AnkiBuilder:
     def __init__(self, deck_name: str = "Flashcards Gerados via IA"):
@@ -10,39 +37,79 @@ class AnkiBuilder:
         self.deck_id = random.randrange(1 << 30, 1 << 31)
         self.deck_name = deck_name
 
-        # CSS do cartão
+        # CSS do cartão — suporta modo claro e modo noturno do Anki
         card_css = """
+/* ── Modo claro (padrão) ── */
 .card {
     font-family: 'Segoe UI', Arial, sans-serif;
-    background-color: #f9f9f9;
-    color: #222;
+    background-color: #ffffff;
+    color: #111111;
     text-align: center;
-    padding: 16px;
+    padding: 20px;
 }
 .pergunta {
     font-size: 20px;
     font-weight: bold;
-    margin-bottom: 8px;
-    color: #1a1a2e;
+    margin-bottom: 10px;
+    color: #111111;
 }
 .resposta {
     font-size: 17px;
-    color: #005a9c;
-    margin-top: 8px;
+    color: #111111;
+    margin-top: 10px;
+    line-height: 1.6;
 }
+
+/* ── Modo noturno do Anki (nightMode) ── */
+.nightMode .card {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+.nightMode .pergunta {
+    color: #ffffff;
+}
+.nightMode .resposta {
+    color: #ffffff;
+}
+.nightMode hr#answer {
+    border-top-color: #444;
+}
+
+/* ── Destaques de cores (funcionam em ambos os modos) ── */
+.importante-vermelho {
+    color: #e53935;
+    font-weight: bold;
+}
+.importante-azul {
+    color: #1565c0;
+    font-weight: bold;
+}
+.nightMode .importante-azul {
+    color: #64b5f6;
+}
+
+/* ── Imagem ── */
 .card-image {
     max-width: 95%;
-    max-height: 280px;
+    max-height: 300px;
     object-fit: contain;
-    margin-top: 14px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    margin-top: 16px;
+    border-radius: 8px;
+    border: 1px solid #cccccc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
+.nightMode .card-image {
+    border-color: #444;
+}
+
+/* ── Separador ── */
 hr#answer {
     border: none;
-    border-top: 2px solid #ddd;
-    margin: 16px 0;
+    border-top: 2px solid #dddddd;
+    margin: 18px 0;
 }
 """
         # Template da frente: mostra apenas a pergunta
@@ -99,7 +166,7 @@ hr#answer {
 
         # Salva os arquivos de mídia em um diretório temporário para o genanki
         temp_media_paths = []
-        temp_dir = os.path.join(os.path.dirname(output_filename), "_anki_media_temp")
+        temp_dir = os.path.join(os.path.dirname(os.path.abspath(output_filename)), "_anki_media_temp")
         if media_files:
             os.makedirs(temp_dir, exist_ok=True)
             for fname, fbytes in media_files:
@@ -113,10 +180,14 @@ hr#answer {
             resposta = card_data.get("resposta", "")
             imagem_fname = card_data.get("imagem_filename", "")
 
+            # Aplica destaques de palavras importantes
+            pergunta_html = highlight_important(pergunta)
+            resposta_html = highlight_important(resposta)
+
             if pergunta and resposta:
                 note = genanki.Note(
                     model=self.model,
-                    fields=[pergunta, resposta, imagem_fname]
+                    fields=[pergunta_html, resposta_html, imagem_fname]
                 )
                 self.deck.add_note(note)
 
