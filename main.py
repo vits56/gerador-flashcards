@@ -101,6 +101,8 @@ class FlashcardApp(ctk.CTk):
                     config = json.load(f)
                     if "api_key" in config:
                         self.api_key_var.set(config["api_key"])
+                    if "model" in config and hasattr(self, "model_var"):
+                        self.model_var.set(config["model"])
         except Exception as e:
             self.log(f"Aviso: não foi possível carregar config: {e}")
 
@@ -108,7 +110,10 @@ class FlashcardApp(ctk.CTk):
         try:
             CONFIG_DIR.mkdir(parents=True, exist_ok=True)
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                json.dump({"api_key": self.api_key_var.get().strip()}, f)
+                json.dump({
+                    "api_key": self.api_key_var.get().strip(),
+                    "model": getattr(self, "model_var", ctk.StringVar(value="llama-3.3-70b-versatile")).get()
+                }, f)
         except Exception as e:
             self.log(f"Aviso: não foi possível salvar config: {e}")
 
@@ -206,6 +211,27 @@ class FlashcardApp(ctk.CTk):
             text_color="gray",
             anchor="w"
         ).pack(anchor="w", pady=(2, 0))
+
+        # --- Seção de Seleção de Modelo ---
+        model_frame = ctk.CTkFrame(self, fg_color="transparent")
+        model_frame.pack(pady=(2, 10), padx=30, fill="x")
+
+        ctk.CTkLabel(
+            model_frame,
+            text="🧠 Inteligência Artificial:",
+            font=("Helvetica", 12, "bold")
+        ).pack(side="left")
+
+        self.model_var = ctk.StringVar(value="llama-3.3-70b-versatile")
+        self.model_menu = ctk.CTkOptionMenu(
+            model_frame,
+            variable=self.model_var,
+            values=[
+                "llama-3.3-70b-versatile",
+                "llama-3.1-8b-instant"
+            ]
+        )
+        self.model_menu.pack(side="right", fill="x", expand=True, padx=(10, 0))
 
         # Botão Gerar
         self.btn_generate = ctk.CTkButton(
@@ -316,6 +342,7 @@ class FlashcardApp(ctk.CTk):
         self.entry_api_key.configure(state="disabled")
         self.btn_toggle_key.configure(state="disabled")
         self.textbox_input.configure(state="disabled")
+        self.model_menu.configure(state="disabled")
         self.update_progress(0)
         self.log("─" * 50)
         self.log("🚀 Iniciando geração de flashcards...")
@@ -376,8 +403,9 @@ class FlashcardApp(ctk.CTk):
             # 2. Salva a chave e cria o engine
             self.save_config()
             api_key = self.api_key_var.get().strip()
-            self.log("🤖 Iniciando processamento com Groq (Llama 3.3 70B)...")
-            engine = GroqFlashcardEngine(api_key=api_key, log_callback=self.log)
+            model_name = self.model_var.get()
+            self.log(f"🤖 Iniciando processamento com Groq ({model_name})...")
+            engine = GroqFlashcardEngine(api_key=api_key, model_name=model_name, log_callback=self.log)
 
             all_flashcards = []
             all_media_files = []
@@ -482,6 +510,7 @@ class FlashcardApp(ctk.CTk):
         self.entry_api_key.configure(state="normal")
         self.btn_toggle_key.configure(state="normal")
         self.textbox_input.configure(state="normal")
+        self.model_menu.configure(state="normal")
         self.log("✔️ Processamento finalizado.")
         self.log("─" * 50)
 
