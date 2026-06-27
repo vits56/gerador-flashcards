@@ -93,7 +93,7 @@ Responda EXCLUSIVAMENTE com um JSON válido neste formato, sem texto antes ou de
                         }
                     ],
                     temperature=0.3,
-                    max_tokens=4096,
+                    max_tokens=2048,
                     # Sem response_format — parseamos manualmente para maior compatibilidade
                 )
 

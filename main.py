@@ -361,7 +361,7 @@ class FlashcardApp(ctk.CTk):
                 self.log("📖 Lendo arquivo PDF e extraindo imagens (isso pode demorar em PDFs grandes)...")
                 parser = PDFParser(self.selected_pdf_path)
                 chunks_with_images = parser.extract_chunks_with_images(
-                    chunk_size=12000,
+                    chunk_size=8000,
                     progress_callback=self.log
                 )
 
