@@ -480,13 +480,19 @@ class FlashcardApp(ctk.CTk):
 
                 if cards:
                     if chunk_images:
-                        img_bytes = chunk_images[0]
-                        img_filename = f"img_{image_counter:04d}.png"
-                        image_counter += 1
-                        all_media_files.append((img_filename, img_bytes))
-                        cards[0]["imagem_filename"] = img_filename
-                        for card in cards[1:]:
-                            card["imagem_filename"] = ""
+                        # Distribui as imagens do chunk entre os flashcards
+                        # de forma round-robin (cada imagem vai para um card diferente).
+                        # Isso garante que o conteúdo visual do PDF apareça
+                        # nos cartões correspondentes em vez de ser descartado.
+                        for card_idx, card in enumerate(cards):
+                            if card_idx < len(chunk_images):
+                                img_bytes = chunk_images[card_idx]
+                                img_filename = f"img_{image_counter:04d}.png"
+                                image_counter += 1
+                                all_media_files.append((img_filename, img_bytes))
+                                card["imagem_filename"] = img_filename
+                            else:
+                                card["imagem_filename"] = ""
                     else:
                         for card in cards:
                             card["imagem_filename"] = ""

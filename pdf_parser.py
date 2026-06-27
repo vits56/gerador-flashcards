@@ -68,16 +68,13 @@ class PDFParser:
                 if width * height < MIN_AREA:
                     continue
 
-                # Renderiza a imagem como PNG para garantir compatibilidade com o Anki
-                img_bytes = base_image["image"]
-                ext = base_image.get("ext", "png")
-
-                # Se não for PNG ou JPEG, converte via renderização
-                if ext.lower() not in ("png", "jpeg", "jpg"):
-                    pix = fitz.Pixmap(doc, xref)
-                    if pix.n > 4:  # CMYK → RGB
-                        pix = fitz.Pixmap(fitz.csRGB, pix)
-                    img_bytes = pix.tobytes("png")
+                # SEMPRE converte para PNG via Pixmap para garantir que o
+                # filename .png no Anki corresponda ao formato real dos bytes.
+                # Isso evita falhas silenciosas quando o PDF contém JPEGs.
+                pix = fitz.Pixmap(doc, xref)
+                if pix.n > 4:  # CMYK → RGB
+                    pix = fitz.Pixmap(fitz.csRGB, pix)
+                img_bytes = pix.tobytes("png")
 
                 images_bytes.append(img_bytes)
             except Exception:

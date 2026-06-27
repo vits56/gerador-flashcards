@@ -186,7 +186,7 @@ hr#answer {
         for card_data in cards_list:
             pergunta = card_data.get("pergunta", "")
             resposta = card_data.get("resposta", "")
-            imagem_fname = card_data.get("imagem_filename", "")
+            imagem_fname = card_data.get("imagem_filename", "") or ""
 
             # Aplica destaques de palavras importantes
             pergunta_html = highlight_important(pergunta)
