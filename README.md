@@ -6,7 +6,19 @@ O **Gerador de Flashcards Anki** é uma ferramenta de desktop para estudantes e 
 
 ---
 
-## 🌟 Funcionalidades
+## ⬇️ Download Rápido (Windows — Sem Instalação)
+
+> **A forma mais fácil de usar o app!** Basta baixar e dar duplo clique.
+
+1. Acesse a seção **[Releases](../../releases/latest)** deste repositório (botão no menu lateral direito do GitHub, ou clique no link).
+2. Baixe o arquivo **`GeradorFlashcardsAnki.exe`** da versão mais recente.
+3. Salve em qualquer pasta do seu computador (ex: Área de Trabalho).
+4. Dê **duplo clique** no `.exe` para abrir o aplicativo. ✅
+
+> ⚠️ **Aviso do Windows Defender:** É normal aparecer um alerta de "aplicativo desconhecido" porque o executável não tem assinatura digital paga. Para prosseguir, clique em **"Mais informações" → "Executar assim mesmo"**.
+
+> 📁 **Onde ficam os flashcards gerados?** Os arquivos `.apkg` e o relatório `.txt` são salvos **automaticamente na sua pasta Downloads** (`C:\Users\SeuNome\Downloads`). Você não precisa procurar em nenhum outro lugar!
+
 
 - 📄 **Leitura Inteligente de PDFs** — Extrai o texto do material de estudo, filtrando cabeçalhos e numerações de página.
 - 📝 **Modo Texto Livre** — Cole trechos de resumos, anotações ou leis para gerar flashcards instantaneamente.
@@ -49,8 +61,9 @@ Se o repositório disponibilizar um arquivo `.exe` na seção **Releases**:
 
 1. Acesse a aba [**Releases**](../../releases) deste repositório.
 2. Baixe o arquivo `GeradorFlashcardsAnki.exe` da versão mais recente.
-3. Salve-o em uma pasta de sua escolha (ex: `C:\Programas\FlashcardAnki`).
+3. Salve-o em qualquer pasta (ex: Área de Trabalho).
 4. Clique duas vezes no `.exe` para abrir o aplicativo. **Nenhuma instalação adicional é necessária.**
+5. Os flashcards gerados serão salvos automaticamente em **`C:\Users\SeuNome\Downloads`**.
 
 > Se o Windows Defender exibir um aviso de "aplicativo desconhecido", clique em **"Mais informações" → "Executar assim mesmo"**. Isso ocorre porque o executável não possui assinatura digital paga.
 

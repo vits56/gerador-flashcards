@@ -6,6 +6,7 @@ import os
 import sys
 import json
 import tkinter.messagebox as messagebox
+from pathlib import Path
 
 # Importações dos módulos locais
 from pdf_parser import PDFParser
@@ -214,14 +215,12 @@ class FlashcardApp(ctk.CTk):
                 output_file = f"{deck_title}_Flashcards.apkg"
                 report_file = f"{deck_title}_Relatorio.txt"
                 
-                # Salva o arquivo na mesma pasta do executável/script, mesmo em ambiente "frozen" (PyInstaller)
-                if getattr(sys, 'frozen', False):
-                    application_path = os.path.dirname(sys.executable)
-                else:
-                    application_path = os.path.dirname(os.path.abspath(__file__))
+                # Salva sempre na pasta Downloads do usuário para fácil acesso
+                downloads_path = Path.home() / "Downloads"
+                downloads_path.mkdir(exist_ok=True)  # Cria se não existir (raro, mas seguro)
                 
-                output_path = os.path.join(application_path, output_file)
-                report_path = os.path.join(application_path, report_file)
+                output_path = str(downloads_path / output_file)
+                report_path = str(downloads_path / report_file)
                 
                 # Gera o apkg
                 builder.export_deck(all_flashcards, output_filename=output_path)
@@ -241,10 +240,16 @@ class FlashcardApp(ctk.CTk):
                         f.write(f"R: {c.get('resposta', '')}\n")
                         f.write("-" * 40 + "\n")
                         
-                self.log(f"Sucesso! Arquivos criados:")
-                self.log(f" -> {output_file}")
-                self.log(f" -> {report_file} (Leia para auditar o texto)")
-                self.after(0, lambda: messagebox.showinfo("Sucesso", f"Foram gerados {len(all_flashcards)} flashcards com sucesso!\n\nSalvo como: {output_file}"))
+                self.log(f"Sucesso! Arquivos salvos na pasta Downloads:")
+                self.log(f" -> {output_path}")
+                self.log(f" -> {report_path} (Leia para auditar o texto)")
+                total = len(all_flashcards)
+                self.after(0, lambda: messagebox.showinfo(
+                    "Sucesso! 🎉",
+                    f"Foram gerados {total} flashcards com sucesso!\n\n"
+                    f"Arquivo salvo em:\n{output_path}\n\n"
+                    "Abra o Anki e dê duplo clique no arquivo .apkg para importar!"
+                ))
                 
         except Exception as e:
             error_msg = f"ERRO CRÍTICO DURANTE EXECUÇÃO: {str(e)}"
