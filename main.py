@@ -421,9 +421,9 @@ class FlashcardApp(ctk.CTk):
             if model_name.startswith("Ollama"):
                 import urllib.request
                 try:
-                    urllib.request.urlopen("http://localhost:11434/", timeout=2)
-                except:
-                    self.log("❌ Erro: O Ollama não parece estar rodando no seu computador.")
+                    urllib.request.urlopen("http://127.0.0.1:11434/", timeout=3)
+                except Exception as e:
+                    self.log(f"❌ Erro: O Ollama não parece estar rodando no seu computador. ({e})")
                     self.after(0, lambda: messagebox.showerror("Ollama não detectado", "Certifique-se de que o Ollama está aberto e rodando no seu PC antes de usar a IA Local."))
                     return
                 self.log(f"🤖 Iniciando processamento local com {model_name}...")

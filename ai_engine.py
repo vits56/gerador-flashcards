@@ -139,8 +139,8 @@ class OllamaFlashcardEngine(BaseFlashcardEngine):
         log_callback: Optional[Callable[[str], None]] = None
     ):
         super().__init__(log_callback)
-        self.model_name = model_name.replace("Ollama: ", "")
-        self.url = "http://localhost:11434/api/chat"
+        self.model_name = model_name.replace("Ollama: ", "").strip()
+        self.url = "http://127.0.0.1:11434/api/chat"
 
     def generate_flashcards(self, text_chunk: str) -> List[Dict[str, str]]:
         payload = {
@@ -187,9 +187,13 @@ class OllamaFlashcardEngine(BaseFlashcardEngine):
                         continue
                 return valid_cards
                 
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode('utf-8', errors='ignore')
+            self._log(f"     ❌ Erro do Ollama (Código {e.code}): {error_body}")
+            return []
         except urllib.error.URLError as e:
             self._log(f"     ❌ Erro de conexão com o Ollama: {e.reason}. Verifique se o Ollama está rodando.")
             return []
         except Exception as e:
-            self._log(f"     ❌ Erro na API Ollama: {str(e)}")
+            self._log(f"     ❌ Erro desconhecido com Ollama: {str(e)}")
             return []
