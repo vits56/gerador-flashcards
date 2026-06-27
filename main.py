@@ -11,7 +11,7 @@ from pathlib import Path
 
 # Importações dos módulos locais
 from pdf_parser import PDFParser
-from ai_engine import GroqFlashcardEngine
+from ai_engine import GroqFlashcardEngine, OllamaFlashcardEngine
 from anki_builder import AnkiBuilder
 
 # Configuração básica de aparência
@@ -228,8 +228,10 @@ class FlashcardApp(ctk.CTk):
             variable=self.model_var,
             values=[
                 "llama-3.3-70b-versatile",
-                "llama-3.1-8b-instant"
-            ]
+                "llama-3.1-8b-instant",
+                "Ollama: llama3.1"
+            ],
+            command=self.on_model_change
         )
         self.model_menu.pack(side="right", fill="x", expand=True, padx=(10, 0))
 
@@ -250,6 +252,15 @@ class FlashcardApp(ctk.CTk):
         # LogBox
         self.log_box = ctk.CTkTextbox(self, height=200, state="disabled")
         self.log_box.pack(pady=10, padx=20, fill="both", expand=True)
+
+        # Chama inicialização do modelo
+        self.on_model_change(self.model_var.get())
+
+    def on_model_change(self, choice):
+        if choice.startswith("Ollama"):
+            self.entry_api_key.configure(state="disabled", placeholder_text="Ignorado para IA Local")
+        else:
+            self.entry_api_key.configure(state="normal", placeholder_text="Cole sua chave de API aqui")
 
     def _setup_placeholder(self, textbox: ctk.CTkTextbox, placeholder: str):
         """Adiciona comportamento de placeholder ao CTkTextbox."""
@@ -316,10 +327,12 @@ class FlashcardApp(ctk.CTk):
     def start_generation_thread(self):
         """Valida campos antes de iniciar a thread de geração."""
         api_key = self.api_key_var.get().strip()
-        if not api_key:
+        is_ollama = self.model_var.get().startswith("Ollama")
+        
+        if not api_key and not is_ollama:
             messagebox.showerror(
                 "Chave da API ausente",
-                "Você precisa inserir sua chave do Groq para usar o app.\n\n"
+                "Você precisa inserir sua chave do Groq para usar o app na nuvem.\n\n"
                 "Clique no link azul para ver como obter a chave gratuita."
             )
             return
@@ -404,8 +417,20 @@ class FlashcardApp(ctk.CTk):
             self.save_config()
             api_key = self.api_key_var.get().strip()
             model_name = self.model_var.get()
-            self.log(f"🤖 Iniciando processamento com Groq ({model_name})...")
-            engine = GroqFlashcardEngine(api_key=api_key, model_name=model_name, log_callback=self.log)
+            
+            if model_name.startswith("Ollama"):
+                import urllib.request
+                try:
+                    urllib.request.urlopen("http://localhost:11434/", timeout=2)
+                except:
+                    self.log("❌ Erro: O Ollama não parece estar rodando no seu computador.")
+                    self.after(0, lambda: messagebox.showerror("Ollama não detectado", "Certifique-se de que o Ollama está aberto e rodando no seu PC antes de usar a IA Local."))
+                    return
+                self.log(f"🤖 Iniciando processamento local com {model_name}...")
+                engine = OllamaFlashcardEngine(model_name=model_name, log_callback=self.log)
+            else:
+                self.log(f"🤖 Iniciando processamento com Groq ({model_name})...")
+                engine = GroqFlashcardEngine(api_key=api_key, model_name=model_name, log_callback=self.log)
 
             all_flashcards = []
             all_media_files = []

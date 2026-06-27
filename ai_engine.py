@@ -2,6 +2,8 @@ from groq import Groq
 import json
 import re
 import time
+import urllib.request
+import urllib.error
 from typing import List, Dict, Callable, Optional
 from pydantic import BaseModel, ValidationError
 
@@ -11,19 +13,9 @@ class FlashcardSchema(BaseModel):
     resposta: str
 
 
-class GroqFlashcardEngine:
-    def __init__(
-        self,
-        api_key: str,
-        model_name: str = "llama-3.3-70b-versatile",
-        log_callback: Optional[Callable[[str], None]] = None
-    ):
-        self.api_key = api_key
-        self.model_name = model_name
-        self.client = Groq(api_key=self.api_key)
-        # Callback para exibir mensagens na UI (substitui print())
+class BaseFlashcardEngine:
+    def __init__(self, log_callback: Optional[Callable[[str], None]] = None):
         self._log = log_callback or print
-
         self.system_instruction = """Você é um professor especialista na criação de flashcards para provas de concursos públicos brasileiros.
 Sua tarefa é analisar o texto fornecido e extrair ABSOLUTAMENTE TODAS as informações que possam ser alvo de questões de prova.
 Você deve criar dezenas de flashcards abrangentes cobrindo:
@@ -35,26 +27,25 @@ Você deve criar dezenas de flashcards abrangentes cobrindo:
 
 Seja exaustivo: não deixe nenhum detalhe de fora.
 
-Responda EXCLUSIVAMENTE com um JSON válido neste formato, sem texto antes ou depois:
-[
-  {"pergunta": "...", "resposta": "..."}
-]"""
+Responda EXCLUSIVAMENTE com um JSON válido neste exato formato:
+{
+  "flashcards": [
+    {"pergunta": "...", "resposta": "..."},
+    {"pergunta": "...", "resposta": "..."}
+  ]
+}"""
 
     def _extract_json_from_text(self, text: str) -> list:
-        """
-        Extrai o JSON da resposta do modelo de forma robusta.
-        Suporta resposta pura, dentro de ```json ... ```, ou objeto {flashcards: []}.
-        """
-        # Remove blocos de código markdown se existirem
+        """Extrai o JSON da resposta do modelo de forma robusta."""
         text = re.sub(r'```(?:json)?\s*', '', text).strip().rstrip('`').strip()
 
-        # Tenta parsear diretamente
         try:
             parsed = json.loads(text)
+            if isinstance(parsed, dict) and "flashcards" in parsed:
+                return parsed["flashcards"]
             if isinstance(parsed, list):
                 return parsed
             if isinstance(parsed, dict):
-                # Procura qualquer chave cujo valor seja uma lista
                 for v in parsed.values():
                     if isinstance(v, list):
                         return v
@@ -62,21 +53,28 @@ Responda EXCLUSIVAMENTE com um JSON válido neste formato, sem texto antes ou de
         except json.JSONDecodeError:
             pass
 
-        # Tenta encontrar um array JSON no texto (ex: texto antes/depois do JSON)
         match = re.search(r'\[.*\]', text, re.DOTALL)
         if match:
             try:
                 return json.loads(match.group())
             except json.JSONDecodeError:
                 pass
-
         return []
 
+
+class GroqFlashcardEngine(BaseFlashcardEngine):
+    def __init__(
+        self,
+        api_key: str,
+        model_name: str = "llama-3.3-70b-versatile",
+        log_callback: Optional[Callable[[str], None]] = None
+    ):
+        super().__init__(log_callback)
+        self.api_key = api_key
+        self.model_name = model_name
+        self.client = Groq(api_key=self.api_key)
+
     def generate_flashcards(self, text_chunk: str) -> List[Dict[str, str]]:
-        """
-        Envia um bloco de texto ao Groq e retorna lista de {pergunta, resposta}.
-        Erros são reportados via log_callback em vez de print() invisível.
-        """
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -84,17 +82,11 @@ Responda EXCLUSIVAMENTE com um JSON válido neste formato, sem texto antes ou de
                     model=self.model_name,
                     messages=[
                         {"role": "system", "content": self.system_instruction},
-                        {
-                            "role": "user",
-                            "content": (
-                                "Crie flashcards para TODOS os detalhes "
-                                "do seguinte texto:\n\n" + text_chunk
-                            )
-                        }
+                        {"role": "user", "content": "Crie flashcards para TODOS os detalhes do seguinte texto:\n\n" + text_chunk}
                     ],
                     temperature=0.3,
                     max_tokens=2048,
-                    # Sem response_format — parseamos manualmente para maior compatibilidade
+                    response_format={"type": "json_object"}
                 )
 
                 output_text = response.choices[0].message.content or ""
@@ -104,7 +96,6 @@ Responda EXCLUSIVAMENTE com um JSON válido neste formato, sem texto antes ou de
                     self._log("     ⚠️ Modelo não retornou flashcards válidos neste bloco.")
                     return []
 
-                # Valida estrutura com Pydantic
                 valid_cards = []
                 for card in raw_flashcards:
                     try:
@@ -136,8 +127,69 @@ Responda EXCLUSIVAMENTE com um JSON válido neste formato, sem texto antes ou de
                         self._log(f"        ... {remaining}s restantes")
                     continue
 
-                # Erro real — mostra na UI em vez de sumir no print()
                 self._log(f"     ❌ Erro na API Groq: {error_str}")
                 return []
-
         return []
+
+
+class OllamaFlashcardEngine(BaseFlashcardEngine):
+    def __init__(
+        self,
+        model_name: str = "llama3.1",
+        log_callback: Optional[Callable[[str], None]] = None
+    ):
+        super().__init__(log_callback)
+        self.model_name = model_name.replace("Ollama: ", "")
+        self.url = "http://localhost:11434/api/chat"
+
+    def generate_flashcards(self, text_chunk: str) -> List[Dict[str, str]]:
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {"role": "system", "content": self.system_instruction},
+                {"role": "user", "content": "Crie flashcards para TODOS os detalhes do seguinte texto:\n\n" + text_chunk}
+            ],
+            "format": "json",
+            "stream": False,
+            "options": {
+                "temperature": 0.3,
+                "num_ctx": 8192
+            }
+        }
+        
+        req = urllib.request.Request(
+            self.url,
+            data=json.dumps(payload).encode('utf-8'),
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        
+        try:
+            with urllib.request.urlopen(req, timeout=300) as response:
+                result = json.loads(response.read().decode('utf-8'))
+                output_text = result.get("message", {}).get("content", "")
+                
+                raw_flashcards = self._extract_json_from_text(output_text)
+                
+                if not raw_flashcards:
+                    self._log("     ⚠️ Modelo local não retornou flashcards válidos neste bloco.")
+                    return []
+                    
+                valid_cards = []
+                for card in raw_flashcards:
+                    try:
+                        validated = FlashcardSchema.model_validate(card)
+                        valid_cards.append({
+                            "pergunta": validated.pergunta,
+                            "resposta": validated.resposta
+                        })
+                    except ValidationError:
+                        continue
+                return valid_cards
+                
+        except urllib.error.URLError as e:
+            self._log(f"     ❌ Erro de conexão com o Ollama: {e.reason}. Verifique se o Ollama está rodando.")
+            return []
+        except Exception as e:
+            self._log(f"     ❌ Erro na API Ollama: {str(e)}")
+            return []
