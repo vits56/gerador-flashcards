@@ -1,7 +1,8 @@
 customtkinter
 PyMuPDF
-google-generativeai
+groq
 genanki
+pydantic
 pytest
 pytest-mock
 pyinstaller

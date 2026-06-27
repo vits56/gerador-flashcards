@@ -20,7 +20,7 @@ class FlashcardApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Gerador de Flashcards Anki (Gemini API)")
+        self.title("Gerador de Flashcards Anki (Groq API)")
         self.geometry("650x700")
         self.config_file = "config.json"
         
@@ -171,7 +171,7 @@ class FlashcardApp(ctk.CTk):
             total_chunks = len(chunks)
             self.log(f"PDF dividido em {total_chunks} blocos de processamento.")
             
-            # 2. Processamento IA (Gemini)
+            # 2. Processamento IA (Groq)
             api_key = self.api_key_var.get().strip()
             if not api_key:
                 self.log("Erro: A API Key do Groq é obrigatória.")
@@ -188,7 +188,7 @@ class FlashcardApp(ctk.CTk):
             all_flashcards = []
             
             for i, chunk in enumerate(chunks):
-                self.log(f"Processando Bloco {i+1}/{total_chunks} no Gemini...")
+                self.log(f"Processando Bloco {i+1}/{total_chunks} no Groq...")
                 cards = engine.generate_flashcards(chunk)
                 if cards:
                     all_flashcards.extend(cards)
@@ -200,9 +200,9 @@ class FlashcardApp(ctk.CTk):
                 progress = (i + 1) / total_chunks
                 self.progress_bar.set(progress)
                 
-                # Rate Limiting Preventivo (Gemini free = 15 RPM, ~1 req a cada 4 seg)
+                # Rate Limiting Preventivo (Groq free tier tem limites por minuto)
                 if i < total_chunks - 1:
-                    time.sleep(4.5)
+                    time.sleep(2)
             
             # 3. Geração do Arquivo Anki (.apkg) e Relatório
             if not all_flashcards:
