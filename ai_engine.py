@@ -161,7 +161,7 @@ class OllamaFlashcardEngine(BaseFlashcardEngine):
             "stream": False,
             "options": {
                 "temperature": 0.3,
-                "num_ctx": 8192
+                "num_ctx": 4096
             }
         }
         

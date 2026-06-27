@@ -89,6 +89,9 @@ class FlashcardApp(ctk.CTk):
 
         self.selected_pdf_path = None
         self._show_api_key = False  # Controla visibilidade da chave
+        self.ollama_process = None  # Para manter o processo do Ollama
+
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.setup_ui()
         self.load_config()
@@ -229,6 +232,7 @@ class FlashcardApp(ctk.CTk):
             values=[
                 "llama-3.3-70b-versatile",
                 "llama-3.1-8b-instant",
+                "Ollama: llama3.2",
                 "Ollama: llama3.1"
             ],
             command=self.on_model_change
@@ -266,7 +270,7 @@ class FlashcardApp(ctk.CTk):
             self.log("⚙️ Ollama não está rodando. Tentando iniciar automaticamente...")
             try:
                 creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-                subprocess.Popen(["ollama", "serve"], creationflags=creationflags)
+                self.ollama_process = subprocess.Popen(["ollama", "serve"], creationflags=creationflags)
                 
                 # Aguarda até 15 segundos
                 for _ in range(5):
@@ -579,6 +583,15 @@ class FlashcardApp(ctk.CTk):
         self.model_menu.configure(state="normal")
         self.log("✔️ Processamento finalizado.")
         self.log("─" * 50)
+
+    def on_closing(self):
+        """Chamado quando a janela é fechada pelo usuário."""
+        if self.ollama_process:
+            try:
+                self.ollama_process.terminate()
+            except:
+                pass
+        self.destroy()
 
 
 if __name__ == "__main__":

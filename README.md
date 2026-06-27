@@ -166,9 +166,10 @@ No seletor **"🧠 Inteligência Artificial"**, você pode escolher:
 |---|---|
 | `llama-3.3-70b-versatile` | Groq na nuvem (rápido, requer chave API) |
 | `llama-3.1-8b-instant` | Groq na nuvem — modelo menor e mais rápido |
-| `Ollama: llama3.1` | IA local — processa offline no seu PC |
+| `Ollama: llama3.2` | IA local rápida — (recomendado) requer Ollama instalado |
+| `Ollama: llama3.1` | IA local — requer Ollama instalado |
 
-> Para usar o Ollama, instale-o em [ollama.com](https://ollama.com) e baixe um modelo: `ollama pull llama3.1`
+> Para usar o Ollama, instale-o em [ollama.com](https://ollama.com) e baixe um modelo: `ollama pull llama3.2`
 
 ### Inserindo a Chave da API
 
@@ -244,7 +245,7 @@ Após a geração, dois arquivos serão criados na sua **pasta Downloads**:
 > Sim! A partir da v1.6.0, todas as imagens do PDF são extraídas, convertidas para PNG, e distribuídas entre os flashcards automaticamente. Elas aparecem no verso do cartão, abaixo da resposta.
 
 **Posso usar sem internet?**
-> Sim! Selecione o motor **Ollama** no app. Você precisa ter o [Ollama](https://ollama.com) instalado e um modelo baixado (`ollama pull llama3.1`). O app inicia o Ollama automaticamente se ele não estiver rodando.
+> Sim! Selecione o motor **Ollama** no app. Você precisa ter o [Ollama](https://ollama.com) instalado e um modelo baixado (ex: `ollama pull llama3.2`). O app inicia o Ollama automaticamente se ele não estiver rodando, e o **encerra ao fechar o app** para liberar a memória RAM do seu PC.
 
 **A chave `gsk_...` é segura?**
 > Ela é salva apenas no arquivo `config.json` local na sua máquina (em `~/.GeradorFlashcardsAnki/`). Ela nunca é enviada para nenhum servidor além do próprio Groq. O arquivo está listado no `.gitignore` para **nunca ser enviado ao GitHub** acidentalmente.
