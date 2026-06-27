@@ -2,16 +2,20 @@ import genanki
 import random
 import os
 import re
+import html
 from typing import List, Dict, Tuple
 
 
 def highlight_important(text: str) -> str:
     """
-    Envolve termos considerados importantes em spans coloridos.
+    Escapa o HTML do texto e envolve termos importantes em spans coloridos.
     - Números, datas, prazos, percentuais → vermelho
-    - Palavras-chave jurídicas/técnicas e termos em destaque → azul
+    - Palavras-chave jurídicas/técnicas → azul
     """
-    # Números, prazos, percentuais, valores monetários → vermelho
+    # Primeiro escapa qualquer HTML que venha do texto da IA (< > & etc.)
+    text = html.escape(text)
+
+    # Números com unidades de prazo/valor → vermelho
     text = re.sub(
         r'\b(\d+(?:[.,]\d+)?(?:\s*(?:dias?|horas?|anos?|meses?|minutos?|segundos?|%|por\s+cento|reais?|R\$))?)\b',
         r'<span style="color:#e53935;font-weight:bold">\1</span>',
@@ -19,14 +23,18 @@ def highlight_important(text: str) -> str:
         flags=re.IGNORECASE
     )
     # Palavras-chave comuns em concursos → azul
-    keywords = [
+    keywords = (
         r'\b(SEMPRE|NUNCA|OBRIGATÓRIO|OBRIGATÓRIA|VEDADO|VEDADA|EXCLUSIVO|EXCLUSIVA|'
-        r'PROIBIDO|PROIBIDA|SOMENTE|APENAS|SALVO|EXCETO|RESSALVADO|NÃO PODE|PODE|'
+        r'PROIBIDO|PROIBIDA|SOMENTE|APENAS|SALVO|EXCETO|RESSALVADO|'
         r'INCUMBE|COMPETE|CABE|DEVE|DEVERÁ|PODERÁ|FACULTATIVO|FACULTATIVA|'
         r'INCONSTITUCIONAL|CONSTITUCIONAL|NULO|NULA|ANULÁVEL|VICIADO)\b'
-    ]
-    for kw in keywords:
-        text = re.sub(kw, r'<span style="color:#1565c0;font-weight:bold">\g<0></span>', text, flags=re.IGNORECASE)
+    )
+    text = re.sub(
+        keywords,
+        r'<span style="color:#1976d2;font-weight:bold">\g<0></span>',
+        text,
+        flags=re.IGNORECASE
+    )
     return text
 
 
