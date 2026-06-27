@@ -85,7 +85,7 @@ class GroqFlashcardEngine(BaseFlashcardEngine):
                         {"role": "user", "content": "Crie flashcards para TODOS os detalhes do seguinte texto:\n\n" + text_chunk}
                     ],
                     temperature=0.3,
-                    max_tokens=2048,
+                    max_tokens=1500,
                     response_format={"type": "json_object"}
                 )
 
@@ -120,10 +120,18 @@ class GroqFlashcardEngine(BaseFlashcardEngine):
                 )
 
                 if is_rate_limit and attempt < max_retries - 1:
-                    wait = 60 * (attempt + 1)
+                    # Tenta extrair o tempo de espera real da mensagem do Groq
+                    # Ex: "Please try again in 33m56.448s"
+                    wait = 30  # fallback
+                    time_match = re.search(r'try again in (?:(\d+)m)?(\d+(?:\.\d+)?)s', error_str)
+                    if time_match:
+                        mins = int(time_match.group(1) or 0)
+                        secs = int(float(time_match.group(2)))
+                        wait = mins * 60 + secs + 5  # +5s margem de segurança
+                    
                     self._log(f"     ⏳ Limite da API atingido. Aguardando {wait}s...")
-                    for remaining in range(wait, 0, -5):
-                        time.sleep(5)
+                    for remaining in range(wait, 0, -10):
+                        time.sleep(min(10, remaining))
                         self._log(f"        ... {remaining}s restantes")
                     continue
 
@@ -153,7 +161,7 @@ class OllamaFlashcardEngine(BaseFlashcardEngine):
             "stream": False,
             "options": {
                 "temperature": 0.3,
-                "num_ctx": 4096
+                "num_ctx": 8192
             }
         }
         

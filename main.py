@@ -401,7 +401,7 @@ class FlashcardApp(ctk.CTk):
                 self.log("📖 Lendo arquivo PDF e extraindo imagens (isso pode demorar em PDFs grandes)...")
                 parser = PDFParser(self.selected_pdf_path)
                 chunks_with_images = parser.extract_chunks_with_images(
-                    chunk_size=8000,
+                    chunk_size=3000,
                     progress_callback=self.log
                 )
 
@@ -430,7 +430,7 @@ class FlashcardApp(ctk.CTk):
                     deck_title = title_input.replace(" ", "_")
 
                 helper_parser = PDFParser("")
-                text_chunks = helper_parser.chunk_text(full_text, chunk_size=8000)
+                text_chunks = helper_parser.chunk_text(full_text, chunk_size=3000)
                 chunks_with_images = [{"text": t, "images": []} for t in text_chunks]
 
             if not chunks_with_images:
@@ -504,9 +504,9 @@ class FlashcardApp(ctk.CTk):
 
                 self.update_progress((i + 1) / total_chunks)
 
-                # Rate Limiting (Groq free tier)
-                if i < total_chunks - 1:
-                    time.sleep(2)
+                # Rate Limiting — apenas para Groq (IA na nuvem), Ollama local não precisa
+                if i < total_chunks - 1 and not model_name.startswith("Ollama"):
+                    time.sleep(1)
 
             # 3. Exportação
             if not all_flashcards:
