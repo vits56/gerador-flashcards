@@ -8,25 +8,47 @@ O **Gerador de Flashcards Anki** é uma ferramenta de desktop para estudantes e 
 
 ## ⬇️ Download Rápido (Windows — Sem Instalação)
 
-> **A forma mais fácil de usar o app!** Basta baixar e dar duplo clique.
+> **A forma mais fácil de usar o app!** Basta baixar, obter a chave gratuita do Groq e dar duplo clique.
 
 1. Acesse a seção **[Releases](../../releases/latest)** deste repositório (botão no menu lateral direito do GitHub, ou clique no link).
 2. Baixe o arquivo **`GeradorFlashcardsAnki.exe`** da versão mais recente.
 3. Salve em qualquer pasta do seu computador (ex: Área de Trabalho).
-4. Dê **duplo clique** no `.exe` para abrir o aplicativo. ✅
+4. **Antes de abrir**, obtenha sua chave gratuita do Groq (veja o passo a passo abaixo).
+5. Dê **duplo clique** no `.exe`, cole a chave no campo indicado e clique em **Gerar Flashcards**. ✅
 
 > ⚠️ **Aviso do Windows Defender:** É normal aparecer um alerta de "aplicativo desconhecido" porque o executável não tem assinatura digital paga. Para prosseguir, clique em **"Mais informações" → "Executar assim mesmo"**.
 
 > 📁 **Onde ficam os flashcards gerados?** Os arquivos `.apkg` e o relatório `.txt` são salvos **automaticamente na sua pasta Downloads** (`C:\Users\SeuNome\Downloads`). Você não precisa procurar em nenhum outro lugar!
 
+---
+
+## 🔑 Como Obter Sua Chave Gratuita do Groq
+
+O app usa a IA do Groq para gerar os flashcards. Você precisa de uma chave de API gratuita. **Não precisa de cartão de crédito.**
+
+| Passo | O que fazer |
+|---|---|
+| **1** | Acesse **[console.groq.com](https://console.groq.com)** e crie uma conta (pode usar sua conta Google) |
+| **2** | No menu lateral esquerdo, clique em **"API Keys"** |
+| **3** | Clique em **"Create API Key"**, dê qualquer nome (ex: `meu-app`) e confirme |
+| **4** | Copie a chave gerada — ela começa com **`gsk_`** |
+| **5** | Abra o app e cole a chave no campo **"Chave da API do Groq"** |
+
+> ✅ **A chave é salva automaticamente!** Após o primeiro uso bem-sucedido, o app lembra da sua chave. Você não precisará colá-la de novo.
+
+> 🔒 A chave fica salva **apenas no seu computador** (arquivo `config.json` local). Ela nunca é enviada para nenhum servidor além do próprio Groq.
+
+
+## 🌟 Funcionalidades
 
 - 📄 **Leitura Inteligente de PDFs** — Extrai o texto do material de estudo, filtrando cabeçalhos e numerações de página.
+- 🖼️ **Imagens do PDF nos Flashcards** — Imagens presentes no PDF são automaticamente incluídas nos cartões do Anki, ajudando a fixar o conteúdo visualmente.
 - 📝 **Modo Texto Livre** — Cole trechos de resumos, anotações ou leis para gerar flashcards instantaneamente.
 - 🤖 **IA Especializada em Concursos (Groq/Llama 3.3 70B)** — Analisa o texto em blocos e extrai regras, exceções, prazos, definições e pegadinhas de prova.
 - 🛡️ **Validação com Pydantic** — Garante que a resposta da IA sempre respeite o formato Pergunta/Resposta. Cards mal gerados são ignorados silenciosamente.
 - 💾 **Exportação nativa `.apkg`** — Pronto para importar no Anki com 1 clique.
 - ⚙️ **Fail-Safe** — Erros em um bloco de texto nunca interrompem o processamento do restante.
-- 🔐 **Chave salva localmente** — Você insere a chave uma única vez; o app a salva em `config.json` para as próximas sessões.
+- 🔐 **Chave salva localmente** — Você insere a chave uma única vez; o app a salva para as próximas sessões.
 
 ---
 
