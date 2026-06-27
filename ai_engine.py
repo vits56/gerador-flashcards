@@ -153,7 +153,7 @@ class OllamaFlashcardEngine(BaseFlashcardEngine):
             "stream": False,
             "options": {
                 "temperature": 0.3,
-                "num_ctx": 8192
+                "num_ctx": 4096
             }
         }
         
@@ -165,7 +165,7 @@ class OllamaFlashcardEngine(BaseFlashcardEngine):
         )
         
         try:
-            with urllib.request.urlopen(req, timeout=300) as response:
+            with urllib.request.urlopen(req, timeout=1200) as response:
                 result = json.loads(response.read().decode('utf-8'))
                 output_text = result.get("message", {}).get("content", "")
                 

@@ -256,6 +256,33 @@ class FlashcardApp(ctk.CTk):
         # Chama inicialização do modelo
         self.on_model_change(self.model_var.get())
 
+    def start_ollama_if_needed(self) -> bool:
+        import urllib.request
+        import subprocess
+        try:
+            urllib.request.urlopen("http://127.0.0.1:11434/", timeout=2)
+            return True
+        except:
+            self.log("⚙️ Ollama não está rodando. Tentando iniciar automaticamente...")
+            try:
+                creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+                subprocess.Popen(["ollama", "serve"], creationflags=creationflags)
+                
+                # Aguarda até 15 segundos
+                for _ in range(5):
+                    time.sleep(3)
+                    try:
+                        urllib.request.urlopen("http://127.0.0.1:11434/", timeout=2)
+                        self.log("✅ Ollama iniciado com sucesso em segundo plano!")
+                        return True
+                    except:
+                        pass
+                self.log("❌ Falha ao iniciar o Ollama automaticamente.")
+                return False
+            except Exception as e:
+                self.log(f"❌ Erro ao tentar executar o comando do Ollama: {e}")
+                return False
+
     def on_model_change(self, choice):
         if choice.startswith("Ollama"):
             self.entry_api_key.configure(state="disabled", placeholder_text="Ignorado para IA Local")
@@ -419,12 +446,8 @@ class FlashcardApp(ctk.CTk):
             model_name = self.model_var.get()
             
             if model_name.startswith("Ollama"):
-                import urllib.request
-                try:
-                    urllib.request.urlopen("http://127.0.0.1:11434/", timeout=3)
-                except Exception as e:
-                    self.log(f"❌ Erro: O Ollama não parece estar rodando no seu computador. ({e})")
-                    self.after(0, lambda: messagebox.showerror("Ollama não detectado", "Certifique-se de que o Ollama está aberto e rodando no seu PC antes de usar a IA Local."))
+                if not self.start_ollama_if_needed():
+                    self.after(0, lambda: messagebox.showerror("Ollama não detectado", "Não foi possível ligar o Ollama automaticamente. Verifique se ele está instalado e tente abrir o Ollama manualmente no seu PC."))
                     return
                 self.log(f"🤖 Iniciando processamento local com {model_name}...")
                 engine = OllamaFlashcardEngine(model_name=model_name, log_callback=self.log)
@@ -435,13 +458,25 @@ class FlashcardApp(ctk.CTk):
             all_flashcards = []
             all_media_files = []
             image_counter = 0
+            eta_per_chunk = None
 
             for i, chunk_data in enumerate(chunks_with_images):
+                chunk_start = time.time()
                 chunk_text = chunk_data["text"]
                 chunk_images = chunk_data["images"]
 
                 self.log(f"  🔄 Bloco {i+1}/{total_chunks}...")
                 cards = engine.generate_flashcards(chunk_text)
+                chunk_end = time.time()
+                
+                if i == 0 and total_chunks > 1:
+                    eta_per_chunk = chunk_end - chunk_start
+                
+                remaining = total_chunks - (i + 1)
+                if remaining > 0 and eta_per_chunk is not None:
+                    eta_seconds = int(eta_per_chunk * remaining)
+                    mins, secs = divmod(eta_seconds, 60)
+                    self.log(f"     ⏱️ Tempo estimado restante: {mins}m {secs}s")
 
                 if cards:
                     if chunk_images:
