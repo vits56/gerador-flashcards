@@ -9,6 +9,7 @@ __pycache__/
 .pytest_cache/
 
 # Diretórios de build do PyInstaller
+# O .exe é publicado via GitHub Releases (python release.py), não commitado aqui
 build/
 dist/
 *.spec
