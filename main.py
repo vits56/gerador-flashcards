@@ -131,8 +131,8 @@ class FlashcardApp(ctk.CTk):
         super().__init__()
 
         self.title("Gerador de Flashcards Anki (Groq API)")
-        self.geometry("850x1050")
-        self.minsize(800, 950)   # Tamanho mínimo para a janela
+        self.geometry("850x1100")
+        self.minsize(800, 1000)   # Tamanho mínimo para a janela
 
         self.selected_pdf_path = None
         self._show_api_key = False  # Controla visibilidade da chave
@@ -174,8 +174,13 @@ class FlashcardApp(ctk.CTk):
             font=("Helvetica", 22, "bold")
         ).pack(pady=(20, 10))
 
-        # TabView PDF / Texto Livre
-        self.tabview = ctk.CTkTabview(self, height=150)
+        # ==========================================
+        # CARD 1: Seleção de Arquivo / Texto Livre
+        # ==========================================
+        card_file = ctk.CTkFrame(self, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
+        card_file.pack(pady=(10, 20), padx=30, fill="x")
+
+        self.tabview = ctk.CTkTabview(card_file, height=150)
         self.tabview.pack(pady=10, padx=20, fill="x")
         self.tabview.add("Arquivo PDF")
         self.tabview.add("Texto Livre")
@@ -206,9 +211,14 @@ class FlashcardApp(ctk.CTk):
         self.textbox_input.pack(pady=5, padx=10, fill="both", expand=True)
         self._setup_placeholder(self.textbox_input, "Cole o texto do seu resumo aqui...")
 
-        # --- Seção de API Key ---
-        api_frame = ctk.CTkFrame(self, fg_color="transparent")
-        api_frame.pack(pady=(8, 2), padx=30, fill="x")
+        # ==========================================
+        # CARD 2: Chave da API
+        # ==========================================
+        card_api = ctk.CTkFrame(self, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
+        card_api.pack(pady=(0, 20), padx=30, fill="x")
+
+        api_frame = ctk.CTkFrame(card_api, fg_color="transparent")
+        api_frame.pack(pady=20, padx=20, fill="x")
 
         ctk.CTkLabel(
             api_frame,
@@ -225,7 +235,7 @@ class FlashcardApp(ctk.CTk):
             cursor="hand2",
             anchor="w"
         )
-        lbl_api_help.pack(anchor="w", pady=(0, 4))
+        lbl_api_help.pack(anchor="w", pady=(0, 8))
         lbl_api_help.bind("<Button-1>", lambda e: self.show_api_help())
 
         # Campo de API Key + botão olho
@@ -259,25 +269,33 @@ class FlashcardApp(ctk.CTk):
             font=("Helvetica", 10),
             text_color="gray",
             anchor="w"
-        ).pack(anchor="w", pady=(2, 0))
+        ).pack(anchor="w", pady=(4, 0))
 
-        # --- Seção de Seleção de Modelo ---
-        model_frame = ctk.CTkFrame(self)
-        model_frame.pack(pady=(2, 10), padx=30, fill="x")
+        # ==========================================
+        # CARD 3: Motor de Inteligência Artificial
+        # ==========================================
+        card_model = ctk.CTkFrame(self, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
+        card_model.pack(pady=(0, 20), padx=30, fill="x")
+
+        model_frame = ctk.CTkFrame(card_model, fg_color="transparent")
+        model_frame.pack(pady=20, padx=20, fill="x")
 
         ctk.CTkLabel(
             model_frame,
             text="Escolha o Motor de Inteligência Artificial",
-            font=("Helvetica", 14, "bold")
-        ).pack(pady=(10, 0))
+            font=("Helvetica", 14, "bold"),
+            anchor="w"
+        ).pack(anchor="w", pady=(0, 5))
         
         ctk.CTkLabel(
             model_frame,
             text="Selecione qual nível de processamento o aplicativo deve usar para ler o seu PDF e extrair os flashcards:",
             font=("Helvetica", 12),
             text_color="gray",
-            wraplength=550
-        ).pack(pady=(0, 10), padx=10)
+            wraplength=700,
+            anchor="w",
+            justify="left"
+        ).pack(anchor="w", pady=(0, 15))
 
         self.model_var = ctk.StringVar(value="llama-3.1-8b-instant")
         
@@ -290,16 +308,17 @@ class FlashcardApp(ctk.CTk):
             font=("Helvetica", 13, "bold"),
             command=self.on_model_change
         )
-        self.rb_fast.pack(anchor="w", padx=20, pady=(5, 0))
+        self.rb_fast.pack(anchor="w", pady=(5, 0))
         
         ctk.CTkLabel(
             model_frame,
             text="• Ideal para: Lei seca, listas, conceitos diretos e revisões rápidas.\n• Como funciona: É um modelo ágil que processa seus PDFs em poucos segundos e economiza seus tokens. Perfeito para gerar grandes volumes de flashcards gastando menos.",
-            font=("Helvetica", 11),
-            text_color="gray",
+            font=("Helvetica", 12),
+            text_color="#d1d5db",
             justify="left",
-            wraplength=550
-        ).pack(anchor="w", padx=45, pady=(0, 10))
+            wraplength=650,
+            anchor="w"
+        ).pack(anchor="w", padx=(30, 0), pady=(4, 15))
 
         # Radio Avançado
         self.rb_advanced = ctk.CTkRadioButton(
@@ -310,25 +329,35 @@ class FlashcardApp(ctk.CTk):
             font=("Helvetica", 13, "bold"),
             command=self.on_model_change
         )
-        self.rb_advanced.pack(anchor="w", padx=20, pady=(5, 0))
+        self.rb_advanced.pack(anchor="w", pady=(5, 0))
         
         ctk.CTkLabel(
             model_frame,
             text="• Ideal para: Doutrina densa, jurisprudência complexa e \"pegadinhas\" de banca.\n• Como funciona: É o nosso motor mais potente e inteligente. Ele possui uma capacidade de interpretação superior para extrair exceções e detalhes sutis do texto, mas consome uma quantidade maior de tokens durante o processamento.",
-            font=("Helvetica", 11),
-            text_color="gray",
+            font=("Helvetica", 12),
+            text_color="#d1d5db",
             justify="left",
-            wraplength=550
-        ).pack(anchor="w", padx=45, pady=(0, 10))
+            wraplength=650,
+            anchor="w"
+        ).pack(anchor="w", padx=(30, 0), pady=(4, 15))
 
+        # Dica de estudo (Bloco destacado)
+        tip_frame = ctk.CTkFrame(model_frame, fg_color="#1e293b", corner_radius=6)
+        tip_frame.pack(pady=(5, 5), fill="x")
+        
+        # Borda esquerda da dica
+        tip_border = ctk.CTkFrame(tip_frame, width=4, fg_color="#3b82f6", corner_radius=0)
+        tip_border.pack(side="left", fill="y")
+        
         ctk.CTkLabel(
-            model_frame,
+            tip_frame,
             text="💡 Dica de Estudo: Use o Modo Econômico para materiais resumidos e PDFs de revisão. Reserve o Modo Avançado para aquele PDF pesado e complexo onde cada detalhe da teoria pode custar pontos preciosos na prova.",
-            font=("Helvetica", 11, "italic"),
-            text_color="#4da6ff",
+            font=("Helvetica", 12, "italic"),
+            text_color="#93c5fd",
             justify="left",
-            wraplength=550
-        ).pack(anchor="w", padx=20, pady=(5, 10))
+            wraplength=650,
+            anchor="w"
+        ).pack(side="left", padx=15, pady=12)
 
         # Botão Gerar
         self.btn_generate = ctk.CTkButton(
@@ -337,20 +366,38 @@ class FlashcardApp(ctk.CTk):
             height=55, font=("Helvetica", 18, "bold"),
             fg_color="#28a745", hover_color="#218838"
         )
-        self.btn_generate.pack(pady=(25, 15), padx=40, fill="x")
+        self.btn_generate.pack(pady=(20, 20), padx=40, fill="x")
 
-        # LogBox (Painel de Status em Destaque)
+        # ==========================================
+        # TERMINAL DE STATUS
+        # ==========================================
+        terminal_frame = ctk.CTkFrame(self, fg_color="#0f172a", corner_radius=8, border_width=2, border_color="#3b82f6")
+        terminal_frame.pack(pady=(0, 20), padx=40, fill="both", expand=True)
+
+        # Header do Terminal
+        header_frame = ctk.CTkFrame(terminal_frame, fg_color="transparent", height=30)
+        header_frame.pack(fill="x", padx=10, pady=(5, 0))
+        
+        ctk.CTkLabel(
+            header_frame, text="STATUS DO PROCESSAMENTO", 
+            font=("Helvetica", 11, "bold"), text_color="#94a3b8"
+        ).pack(side="left", padx=5)
+
+        separator = ctk.CTkFrame(terminal_frame, height=1, fg_color="#334155")
+        separator.pack(fill="x", padx=10, pady=5)
+
+        # Corpo do Terminal (Output)
         self.log_box = ctk.CTkTextbox(
-            self, 
-            height=400, 
+            terminal_frame, 
+            height=250, 
             state="disabled",
-            font=("Helvetica", 17, "bold"),
-            border_width=3,
-            border_spacing=20,
-            border_color="#4da6ff",
-            wrap="word"
+            fg_color="#0f172a",
+            text_color="#10b981",
+            font=("Consolas", 16),
+            wrap="word",
+            border_width=0
         )
-        self.log_box.pack(pady=(5, 15), padx=40, fill="both", expand=True)
+        self.log_box.pack(pady=(0, 10), padx=10, fill="both", expand=True)
 
         # Barra de Progresso
         self.progress_bar = ctk.CTkProgressBar(self, mode="determinate", height=18)
