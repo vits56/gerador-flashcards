@@ -131,8 +131,8 @@ class FlashcardApp(ctk.CTk):
         super().__init__()
 
         self.title("Gerador de Flashcards Anki (Groq API)")
-        self.geometry("850x1100")
-        self.minsize(800, 1000)   # Tamanho mínimo para a janela
+        self.geometry("550x700")
+        self.minsize(450, 650)   # Tamanho mínimo para a janela
 
         self.selected_pdf_path = None
         self._show_api_key = False  # Controla visibilidade da chave
@@ -167,287 +167,81 @@ class FlashcardApp(ctk.CTk):
             self.log(f"Aviso: não foi possível salvar config: {e}")
 
     # ─── Interface ─────────────────────────────────────────────────
+    def toggle_theme(self):
+        current = ctk.get_appearance_mode()
+        ctk.set_appearance_mode("Light" if current == "Dark" else "Dark")
+
     def setup_ui(self):
-        self.configure(fg_color="#1e1e1e")
+        self.configure(fg_color=("#f3f4f6", "#1e1e1e"))
         
-        self.main_scroll_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        self.main_scroll_frame.pack(fill="both", expand=True)
+        self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.main_frame.pack(fill="both", expand=True, padx=8, pady=8)
 
-        # Título
-        ctk.CTkLabel(
-            self.main_scroll_frame, text="Gerador de Flashcards Anki 🧠",
-            font=("Segoe UI", 24, "bold"), text_color="#ffffff"
-        ).pack(pady=(20, 10))
+        # Cabeçalho
+        header_bar = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        header_bar.pack(fill="x", pady=(0, 5))
+        
+        ctk.CTkLabel(header_bar, text="Gerador de Flashcards Anki 🧠", font=("Segoe UI", 16, "bold")).pack(side="left")
+        ctk.CTkButton(header_bar, text="☀️/🌙", width=40, height=24, font=("Segoe UI", 12), command=self.toggle_theme, fg_color="#444", hover_color="#555").pack(side="right")
 
-        # ==========================================
-        # CARD 1: Seleção de Arquivo / Texto Livre
-        # ==========================================
-        card_file = ctk.CTkFrame(self.main_scroll_frame, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
-        card_file.pack(pady=(10, 20), padx=30, fill="x")
+        # CARD 1: Seleção de PDF
+        card_file = ctk.CTkFrame(self.main_frame, fg_color=("#ffffff", "#2d2d2d"), corner_radius=6, border_width=1, border_color="#444")
+        card_file.pack(fill="x", pady=(0, 6), ipady=10, ipadx=10)
+        
+        self.btn_select_pdf = ctk.CTkButton(card_file, text="📄 Selecionar PDF", command=self.select_pdf, fg_color="transparent", border_width=1, text_color=("black", "white"), font=("Segoe UI", 12))
+        self.btn_select_pdf.pack(fill="x", padx=10, pady=(10, 0))
+        
+        self.lbl_selected_file = ctk.CTkLabel(card_file, text="Nenhum arquivo selecionado", text_color="gray", font=("Segoe UI", 11))
+        self.lbl_selected_file.pack(pady=(2, 0))
 
-        self.tabview = ctk.CTkTabview(
-            card_file, height=150,
-            fg_color="#2d2d2d",
-            segmented_button_fg_color="#3d3d3d",
-            segmented_button_selected_color="#3b82f6",
-            segmented_button_selected_hover_color="#2563eb",
-            segmented_button_unselected_color="#3d3d3d",
-            segmented_button_unselected_hover_color="#444444"
-        )
-        self.tabview.pack(pady=10, padx=20, fill="x")
-        self.tabview.add("Arquivo PDF")
-        self.tabview.add("Texto Livre")
-
-        # --- Aba PDF ---
-        self.btn_select_pdf = ctk.CTkButton(
-            self.tabview.tab("Arquivo PDF"),
-            text="📄 Selecionar PDF",
-            command=self.select_pdf,
-            fg_color="#3b82f6",
-            hover_color="#2563eb",
-            font=("Segoe UI", 14)
-        )
-        self.btn_select_pdf.pack(pady=20)
-
-        self.lbl_selected_file = ctk.CTkLabel(
-            self.tabview.tab("Arquivo PDF"),
-            text="Nenhum arquivo selecionado",
-            text_color="gray"
-        )
-        self.lbl_selected_file.pack(pady=5)
-
-        # --- Aba Texto ---
-        self.entry_deck_title = ctk.CTkEntry(
-            self.tabview.tab("Texto Livre"),
-            placeholder_text="Título do Baralho (Opcional)"
-        )
-        self.entry_deck_title.pack(pady=(10, 5), padx=10, fill="x")
-
-        self.textbox_input = ctk.CTkTextbox(self.tabview.tab("Texto Livre"), height=100)
-        self.textbox_input.pack(pady=5, padx=10, fill="both", expand=True)
-        self._setup_placeholder(self.textbox_input, "Cole o texto do seu resumo aqui...")
-
-        # ==========================================
-        # CARD 2: Chave da API
-        # ==========================================
-        card_api = ctk.CTkFrame(self.main_scroll_frame, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
-        card_api.pack(pady=(0, 20), padx=30, fill="x")
-
-        api_frame = ctk.CTkFrame(card_api, fg_color="transparent")
-        api_frame.pack(pady=20, padx=20, fill="x")
-
-        ctk.CTkLabel(
-            api_frame,
-            text="Chave da API do Groq (gratuita, necessária para o app funcionar):",
-            font=("Helvetica", 12, "bold"),
-            anchor="w"
-        ).pack(anchor="w")
-
-        lbl_api_help = ctk.CTkLabel(
-            api_frame,
-            text="❓ Não sabe o que é isso? Clique aqui para ver como obter em 1 minuto →",
-            font=("Helvetica", 11),
-            text_color="#4da6ff",
-            cursor="hand2",
-            anchor="w"
-        )
-        lbl_api_help.pack(anchor="w", pady=(0, 8))
+        # CARD 2: API
+        card_api = ctk.CTkFrame(self.main_frame, fg_color=("#ffffff", "#2d2d2d"), corner_radius=6, border_width=1, border_color="#444")
+        card_api.pack(fill="x", pady=(0, 6), ipady=10, ipadx=10)
+        
+        ctk.CTkLabel(card_api, text="Chave da API do Groq:", font=("Segoe UI", 12, "bold"), anchor="w").pack(fill="x", padx=10)
+        
+        lbl_api_help = ctk.CTkLabel(card_api, text="❓ Obter chave da API (Gratuito) →", font=("Segoe UI", 11), text_color="#3b82f6", cursor="hand2", anchor="w")
+        lbl_api_help.pack(fill="x", padx=10)
         lbl_api_help.bind("<Button-1>", lambda e: self.show_api_help())
 
-        # Campo de API Key + botão olho
-        key_row = ctk.CTkFrame(api_frame, fg_color="transparent")
-        key_row.pack(fill="x")
-
+        key_row = ctk.CTkFrame(card_api, fg_color="transparent")
+        key_row.pack(fill="x", padx=10, pady=(5, 0))
+        
         self.api_key_var = ctk.StringVar(value="")
-        self.entry_api_key = ctk.CTkEntry(
-            key_row,
-            textvariable=self.api_key_var,
-            show="*",
-            placeholder_text="Cole sua chave aqui...",
-            height=36,
-            fg_color="#1a1a1a",
-            border_color="#444444",
-            text_color="#ffffff"
-        )
+        self.entry_api_key = ctk.CTkEntry(key_row, textvariable=self.api_key_var, show="*", height=28, font=("Segoe UI", 11))
         self.entry_api_key.pack(side="left", fill="x", expand=True)
-
-        self.btn_toggle_key = ctk.CTkButton(
-            key_row,
-            text="👁",
-            width=40,
-            height=36,
-            fg_color="#444444",
-            hover_color="#555555",
-            command=self.toggle_api_key_visibility
-        )
-        self.btn_toggle_key.pack(side="left", padx=(10, 0))
-
-        ctk.CTkLabel(
-            api_frame,
-            text="🔒 Salva automaticamente no seu computador após o primeiro uso.",
-            font=("Segoe UI", 12),
-            text_color="#9ca3af",
-            anchor="w"
-        ).pack(anchor="w", pady=(8, 0))
-
-        # ==========================================
-        # CARD 3: Motor de Inteligência Artificial
-        # ==========================================
-        card_model = ctk.CTkFrame(self.main_scroll_frame, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
-        card_model.pack(pady=(0, 20), padx=30, fill="x")
-
-        model_frame = ctk.CTkFrame(card_model, fg_color="transparent")
-        model_frame.pack(pady=20, padx=20, fill="x")
-
-        ctk.CTkLabel(
-            model_frame,
-            text="Escolha o Motor de Inteligência Artificial",
-            font=("Helvetica", 14, "bold"),
-            anchor="w"
-        ).pack(anchor="w", pady=(0, 5))
         
-        ctk.CTkLabel(
-            model_frame,
-            text="Selecione qual nível de processamento o aplicativo deve usar para ler o seu PDF e extrair os flashcards:",
-            font=("Helvetica", 12),
-            text_color="gray",
-            wraplength=700,
-            anchor="w",
-            justify="left"
-        ).pack(anchor="w", pady=(0, 15))
+        self.btn_toggle_key = ctk.CTkButton(key_row, text="👁", width=35, height=28, command=self.toggle_api_key_visibility, fg_color="#444", hover_color="#555")
+        self.btn_toggle_key.pack(side="left", padx=(4, 0))
 
-        self.model_var = ctk.StringVar(value="llama-3.1-8b-instant")
+        # CARD 3: Motor IA
+        card_model = ctk.CTkFrame(self.main_frame, fg_color=("#ffffff", "#2d2d2d"), corner_radius=6, border_width=1, border_color="#444")
+        card_model.pack(fill="x", pady=(0, 6), ipady=10, ipadx=10)
         
-        # Radio Rápido
-        self.rb_fast = ctk.CTkRadioButton(
-            model_frame, 
-            text="⚡ Modo Rápido e Econômico (Llama 3.1 - 8B)",
-            variable=self.model_var, 
-            value="llama-3.1-8b-instant",
-            font=("Helvetica", 13, "bold"),
-            command=self.on_model_change
-        )
-        self.rb_fast.pack(anchor="w", pady=(5, 0))
+        ctk.CTkLabel(card_model, text="Motor de IA", font=("Segoe UI", 12, "bold"), anchor="w").pack(fill="x", padx=10)
         
-        ctk.CTkLabel(
-            model_frame,
-            text="• Ideal para: Lei seca, listas, conceitos diretos e revisões rápidas.\n• Como funciona: É um modelo ágil que processa seus PDFs em poucos segundos e economiza seus tokens. Perfeito para gerar grandes volumes de flashcards gastando menos.",
-            font=("Helvetica", 12),
-            text_color="#d1d5db",
-            justify="left",
-            wraplength=650,
-            anchor="w"
-        ).pack(anchor="w", padx=(30, 0), pady=(4, 15))
-
-        # Radio Avançado
-        self.rb_advanced = ctk.CTkRadioButton(
-            model_frame, 
-            text="🧠 Modo Avançado e Analítico (Llama 3.3 - 70B)",
-            variable=self.model_var, 
-            value="llama-3.3-70b-versatile",
-            font=("Helvetica", 13, "bold"),
-            command=self.on_model_change
-        )
-        self.rb_advanced.pack(anchor="w", pady=(5, 0))
+        self.model_var = ctk.StringVar(value="llama-3.3-70b-versatile")
         
-        ctk.CTkLabel(
-            model_frame,
-            text="• Ideal para: Doutrina densa, jurisprudência complexa e \"pegadinhas\" de banca.\n• Como funciona: É o nosso motor mais potente e inteligente. Ele possui uma capacidade de interpretação superior para extrair exceções e detalhes sutis do texto, mas consome uma quantidade maior de tokens durante o processamento.",
-            font=("Helvetica", 12),
-            text_color="#d1d5db",
-            justify="left",
-            wraplength=650,
-            anchor="w"
-        ).pack(anchor="w", padx=(30, 0), pady=(4, 15))
-
-        # Dica de estudo (Bloco destacado)
-        tip_frame = ctk.CTkFrame(model_frame, fg_color="#1e293b", corner_radius=6)
-        tip_frame.pack(pady=(5, 5), fill="x")
+        self.rb_fast = ctk.CTkRadioButton(card_model, text="⚡ Econômico (8B)", variable=self.model_var, value="llama-3.1-8b-instant", font=("Segoe UI", 11, "bold"))
+        self.rb_fast.pack(anchor="w", padx=10, pady=(5, 0))
+        ctk.CTkLabel(card_model, text="• Ideal para revisões rápidas e conceitos diretos.", font=("Segoe UI", 9), text_color="#888", anchor="w").pack(anchor="w", padx=30, pady=(0, 5))
         
-        # Borda esquerda da dica
-        tip_border = ctk.CTkFrame(tip_frame, width=4, fg_color="#3b82f6", corner_radius=0)
-        tip_border.pack(side="left", fill="y")
-        
-        ctk.CTkLabel(
-            tip_frame,
-            text="💡 Dica de Estudo: Use o Modo Econômico para materiais resumidos e PDFs de revisão. Reserve o Modo Avançado para aquele PDF pesado e complexo onde cada detalhe da teoria pode custar pontos preciosos na prova.",
-            font=("Helvetica", 12, "italic"),
-            text_color="#93c5fd",
-            justify="left",
-            wraplength=650,
-            anchor="w"
-        ).pack(side="left", padx=15, pady=12)
+        self.rb_advanced = ctk.CTkRadioButton(card_model, text="🧠 Avançado (70B)", variable=self.model_var, value="llama-3.3-70b-versatile", font=("Segoe UI", 11, "bold"))
+        self.rb_advanced.pack(anchor="w", padx=10)
+        ctk.CTkLabel(card_model, text="• Alta precisão para leis complexas e doutrinas.", font=("Segoe UI", 9), text_color="#888", anchor="w").pack(anchor="w", padx=30)
 
         # Botão Gerar
-        self.btn_generate = ctk.CTkButton(
-            self.main_scroll_frame, text="⏳ Gerar Flashcards",
-            command=self.start_generation_thread,
-            height=55, font=("Segoe UI", 18, "bold"),
-            fg_color="#22c55e", hover_color="#16a34a"
-        )
-        self.btn_generate.pack(pady=(10, 25), padx=40, fill="x")
+        self.btn_generate = ctk.CTkButton(self.main_frame, text="⏳ Gerar Flashcards", command=self.start_generation_thread, height=40, font=("Segoe UI", 13, "bold"), fg_color="#22c55e", hover_color="#16a34a")
+        self.btn_generate.pack(fill="x", pady=(8, 8))
 
-        # ==========================================
-        # TERMINAL DE STATUS
-        # ==========================================
-        terminal_frame = ctk.CTkFrame(self.main_scroll_frame, fg_color="#0f172a", corner_radius=8, border_width=1, border_color="#334155")
-        terminal_frame.pack(pady=(0, 20), padx=40, fill="both", expand=True)
+        # Terminal
+        self.log_box = ctk.CTkTextbox(self.main_frame, height=100, state="disabled", fg_color="#000000", text_color="#10b981", font=("Consolas", 11), wrap="word", corner_radius=6)
+        self.log_box.pack(fill="both", expand=True)
 
-        # Header do Terminal
-        header_frame = ctk.CTkFrame(terminal_frame, fg_color="transparent", height=30)
-        header_frame.pack(fill="x", padx=10, pady=(5, 0))
-        
-        ctk.CTkLabel(
-            header_frame, text="STATUS DO PROCESSAMENTO", 
-            font=("Segoe UI", 12, "bold"), text_color="#94a3b8"
-        ).pack(side="left", padx=5)
-
-        separator = ctk.CTkFrame(terminal_frame, height=1, fg_color="#1e293b")
-        separator.pack(fill="x", padx=10, pady=5)
-
-        # Corpo do Terminal (Output)
-        self.log_box = ctk.CTkTextbox(
-            terminal_frame, 
-            height=250, 
-            state="disabled",
-            fg_color="#0f172a",
-            text_color="#10b981",
-            font=("Consolas", 16),
-            wrap="word",
-            border_width=0
-        )
-        self.log_box.pack(pady=(0, 10), padx=10, fill="both", expand=True)
-
-        # Barra de Progresso
-        self.progress_bar = ctk.CTkProgressBar(self, mode="determinate", height=18)
-        self.progress_bar.pack(pady=(0, 20), fill="x", padx=40)
+        self.progress_bar = ctk.CTkProgressBar(self.main_frame, mode="determinate", height=12)
+        self.progress_bar.pack(fill="x", pady=(8, 0))
         self.progress_bar.set(0)
 
-        # Chama inicialização do modelo
-        self.on_model_change(self.model_var.get())
-
-
-
-    def on_model_change(self, choice=None):
-        self.entry_api_key.configure(state="normal", placeholder_text="Cole sua chave de API aqui")
-
-    def _setup_placeholder(self, textbox: ctk.CTkTextbox, placeholder: str):
-        """Adiciona comportamento de placeholder ao CTkTextbox."""
-        textbox.insert("1.0", placeholder)
-        textbox.configure(text_color="gray")
-
-        def on_focus_in(event):
-            if textbox.get("1.0", "end-1c") == placeholder:
-                textbox.delete("1.0", "end")
-                textbox.configure(text_color=("black", "white"))
-
-        def on_focus_out(event):
-            if not textbox.get("1.0", "end-1c").strip():
-                textbox.insert("1.0", placeholder)
-                textbox.configure(text_color="gray")
-
-        textbox.bind("<FocusIn>", on_focus_in)
-        textbox.bind("<FocusOut>", on_focus_out)
 
     def toggle_api_key_visibility(self):
         """Alterna entre mostrar e esconder a chave da API."""
@@ -532,42 +326,26 @@ class FlashcardApp(ctk.CTk):
 
     def process_content(self):
         try:
-            active_tab = self.tabview.get()
             deck_title = "Resumo_IA"
             text_chunks = []
             parser = None
 
             # 1. Obtenção do conteúdo
-            if active_tab == "Arquivo PDF":
-                self.log("📖 Lendo arquivo PDF...")
-                parser = PDFParser(self.selected_pdf_path)
-                full_text = parser.extract_text()
-                text_chunks = parser.chunk_text(full_text, chunk_size=3000)
+            self.log("📖 Lendo arquivo PDF...")
+            parser = PDFParser(self.selected_pdf_path)
+            full_text = parser.extract_text()
+            text_chunks = parser.chunk_text(full_text, chunk_size=3000)
 
-                filename = os.path.basename(self.selected_pdf_path)
-                deck_title = os.path.splitext(filename)[0].replace(" ", "_")
+            filename = os.path.basename(self.selected_pdf_path)
+            deck_title = os.path.splitext(filename)[0].replace(" ", "_")
 
-                self.log(
-                    f"📊 {parser.page_count} páginas | "
-                    f"{parser.char_count:,} caracteres"
-                )
+            self.log(
+                f"📊 {parser.page_count} páginas | "
+                f"{parser.char_count:,} caracteres"
+            )
 
-                if parser.char_count == 0:
-                    self.log("⚠️ Aviso: 0 caracteres extraídos. Provável PDF escaneado (imagem).")
-
-            else:
-                self.log("📝 Lendo texto fornecido...")
-                placeholder = "Cole o texto do seu resumo aqui..."
-                full_text = self.textbox_input.get("1.0", "end-1c")
-                if full_text.strip() == placeholder:
-                    full_text = ""
-
-                title_input = self.entry_deck_title.get().strip()
-                if title_input:
-                    deck_title = title_input.replace(" ", "_")
-
-                helper_parser = PDFParser("")
-                text_chunks = helper_parser.chunk_text(full_text, chunk_size=3000)
+            if parser.char_count == 0:
+                self.log("⚠️ Aviso: 0 caracteres extraídos. Provável PDF escaneado (imagem).")
 
             if not text_chunks:
                 self.log("⚠️ Nenhum conteúdo extraído.")
