@@ -11,7 +11,7 @@ from pathlib import Path
 
 # Importações dos módulos locais
 from pdf_parser import PDFParser
-from ai_engine import GroqFlashcardEngine, OllamaFlashcardEngine
+from ai_engine import GroqFlashcardEngine
 from anki_builder import AnkiBuilder
 
 # Configuração básica de aparência
@@ -89,7 +89,6 @@ class FlashcardApp(ctk.CTk):
 
         self.selected_pdf_path = None
         self._show_api_key = False  # Controla visibilidade da chave
-        self.ollama_process = None  # Para manter o processo do Ollama
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
@@ -231,9 +230,7 @@ class FlashcardApp(ctk.CTk):
             variable=self.model_var,
             values=[
                 "llama-3.3-70b-versatile",
-                "llama-3.1-8b-instant",
-                "Ollama: llama3.2",
-                "Ollama: llama3.1"
+                "llama-3.1-8b-instant"
             ],
             command=self.on_model_change
         )
@@ -260,38 +257,10 @@ class FlashcardApp(ctk.CTk):
         # Chama inicialização do modelo
         self.on_model_change(self.model_var.get())
 
-    def start_ollama_if_needed(self) -> bool:
-        import urllib.request
-        import subprocess
-        try:
-            urllib.request.urlopen("http://127.0.0.1:11434/", timeout=2)
-            return True
-        except:
-            self.log("⚙️ Ollama não está rodando. Tentando iniciar automaticamente...")
-            try:
-                creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-                self.ollama_process = subprocess.Popen(["ollama", "serve"], creationflags=creationflags)
-                
-                # Aguarda até 15 segundos
-                for _ in range(5):
-                    time.sleep(3)
-                    try:
-                        urllib.request.urlopen("http://127.0.0.1:11434/", timeout=2)
-                        self.log("✅ Ollama iniciado com sucesso em segundo plano!")
-                        return True
-                    except:
-                        pass
-                self.log("❌ Falha ao iniciar o Ollama automaticamente.")
-                return False
-            except Exception as e:
-                self.log(f"❌ Erro ao tentar executar o comando do Ollama: {e}")
-                return False
+
 
     def on_model_change(self, choice):
-        if choice.startswith("Ollama"):
-            self.entry_api_key.configure(state="disabled", placeholder_text="Ignorado para IA Local")
-        else:
-            self.entry_api_key.configure(state="normal", placeholder_text="Cole sua chave de API aqui")
+        self.entry_api_key.configure(state="normal", placeholder_text="Cole sua chave de API aqui")
 
     def _setup_placeholder(self, textbox: ctk.CTkTextbox, placeholder: str):
         """Adiciona comportamento de placeholder ao CTkTextbox."""
@@ -357,13 +326,10 @@ class FlashcardApp(ctk.CTk):
     # ─── Geração de Flashcards ─────────────────────────────────────
     def start_generation_thread(self):
         """Valida campos antes de iniciar a thread de geração."""
-        api_key = self.api_key_var.get().strip()
-        is_ollama = self.model_var.get().startswith("Ollama")
-        
-        if not api_key and not is_ollama:
+        if not api_key:
             messagebox.showerror(
                 "Chave da API ausente",
-                "Você precisa inserir sua chave do Groq para usar o app na nuvem.\n\n"
+                "Você precisa inserir sua chave do Groq para usar o app.\n\n"
                 "Clique no link azul para ver como obter a chave gratuita."
             )
             return
@@ -397,26 +363,22 @@ class FlashcardApp(ctk.CTk):
         try:
             active_tab = self.tabview.get()
             deck_title = "Resumo_IA"
-            chunks_with_images = []
+            text_chunks = []
             parser = None
 
             # 1. Obtenção do conteúdo
             if active_tab == "Arquivo PDF":
-                self.log("📖 Lendo arquivo PDF e extraindo imagens (isso pode demorar em PDFs grandes)...")
+                self.log("📖 Lendo arquivo PDF...")
                 parser = PDFParser(self.selected_pdf_path)
-                chunks_with_images = parser.extract_chunks_with_images(
-                    chunk_size=3000,
-                    progress_callback=self.log
-                )
+                full_text = parser.extract_text()
+                text_chunks = parser.chunk_text(full_text, chunk_size=3000)
 
                 filename = os.path.basename(self.selected_pdf_path)
                 deck_title = os.path.splitext(filename)[0].replace(" ", "_")
 
-                total_imgs = sum(len(c["images"]) for c in chunks_with_images)
                 self.log(
                     f"📊 {parser.page_count} páginas | "
-                    f"{parser.char_count:,} caracteres | "
-                    f"{total_imgs} imagem(ns)"
+                    f"{parser.char_count:,} caracteres"
                 )
 
                 if parser.char_count == 0:
@@ -435,13 +397,12 @@ class FlashcardApp(ctk.CTk):
 
                 helper_parser = PDFParser("")
                 text_chunks = helper_parser.chunk_text(full_text, chunk_size=3000)
-                chunks_with_images = [{"text": t, "images": []} for t in text_chunks]
 
-            if not chunks_with_images:
+            if not text_chunks:
                 self.log("⚠️ Nenhum conteúdo extraído.")
                 return
 
-            total_chunks = len(chunks_with_images)
+            total_chunks = len(text_chunks)
             self.log(f"📦 Conteúdo dividido em {total_chunks} bloco(s).")
 
             # 2. Salva a chave e cria o engine
@@ -449,25 +410,14 @@ class FlashcardApp(ctk.CTk):
             api_key = self.api_key_var.get().strip()
             model_name = self.model_var.get()
             
-            if model_name.startswith("Ollama"):
-                if not self.start_ollama_if_needed():
-                    self.after(0, lambda: messagebox.showerror("Ollama não detectado", "Não foi possível ligar o Ollama automaticamente. Verifique se ele está instalado e tente abrir o Ollama manualmente no seu PC."))
-                    return
-                self.log(f"🤖 Iniciando processamento local com {model_name}...")
-                engine = OllamaFlashcardEngine(model_name=model_name, log_callback=self.log)
-            else:
-                self.log(f"🤖 Iniciando processamento com Groq ({model_name})...")
-                engine = GroqFlashcardEngine(api_key=api_key, model_name=model_name, log_callback=self.log)
+            self.log(f"🤖 Iniciando processamento com Groq ({model_name})...")
+            engine = GroqFlashcardEngine(api_key=api_key, model_name=model_name, log_callback=self.log)
 
             all_flashcards = []
-            all_media_files = []
-            image_counter = 0
             eta_per_chunk = None
 
-            for i, chunk_data in enumerate(chunks_with_images):
+            for i, chunk_text in enumerate(text_chunks):
                 chunk_start = time.time()
-                chunk_text = chunk_data["text"]
-                chunk_images = chunk_data["images"]
 
                 self.log(f"  🔄 Bloco {i+1}/{total_chunks}...")
                 cards = engine.generate_flashcards(chunk_text)
@@ -483,24 +433,6 @@ class FlashcardApp(ctk.CTk):
                     self.log(f"     ⏱️ Tempo estimado restante: {mins}m {secs}s")
 
                 if cards:
-                    if chunk_images:
-                        # Distribui as imagens do chunk entre os flashcards
-                        # de forma round-robin (cada imagem vai para um card diferente).
-                        # Isso garante que o conteúdo visual do PDF apareça
-                        # nos cartões correspondentes em vez de ser descartado.
-                        for card_idx, card in enumerate(cards):
-                            if card_idx < len(chunk_images):
-                                img_bytes = chunk_images[card_idx]
-                                img_filename = f"img_{image_counter:04d}.png"
-                                image_counter += 1
-                                all_media_files.append((img_filename, img_bytes))
-                                card["imagem_filename"] = img_filename
-                            else:
-                                card["imagem_filename"] = ""
-                    else:
-                        for card in cards:
-                            card["imagem_filename"] = ""
-
                     all_flashcards.extend(cards)
                     self.log(f"     ✅ {len(cards)} flashcard(s) gerado(s).")
                 else:
@@ -508,8 +440,7 @@ class FlashcardApp(ctk.CTk):
 
                 self.update_progress((i + 1) / total_chunks)
 
-                # Rate Limiting — apenas para Groq (IA na nuvem), Ollama local não precisa
-                if i < total_chunks - 1 and not model_name.startswith("Ollama"):
+                if i < total_chunks - 1:
                     time.sleep(1)
 
             # 3. Exportação
@@ -518,8 +449,6 @@ class FlashcardApp(ctk.CTk):
                 return
 
             self.log(f"📦 Empacotando {len(all_flashcards)} flashcard(s)...")
-            if all_media_files:
-                self.log(f"   🖼️ {len(all_media_files)} imagem(ns) incluída(s).")
 
             builder = AnkiBuilder(deck_name=deck_title)
 
@@ -531,15 +460,13 @@ class FlashcardApp(ctk.CTk):
 
             builder.export_deck(
                 all_flashcards,
-                output_filename=output_path,
-                media_files=all_media_files
+                output_filename=output_path
             )
 
             # Relatório de texto
             with open(report_path, "w", encoding="utf-8") as f:
                 f.write(f"=== RELATÓRIO: {deck_title} ===\n")
                 f.write(f"Total de flashcards: {len(all_flashcards)}\n")
-                f.write(f"Imagens incluídas: {len(all_media_files)}\n")
                 if parser:
                     f.write(f"Páginas analisadas: {parser.page_count}\n")
                     f.write(f"Caracteres extraídos: {parser.char_count}\n")
@@ -548,8 +475,6 @@ class FlashcardApp(ctk.CTk):
                     f.write(f"CARTÃO {idx}\n")
                     f.write(f"P: {c.get('pergunta', '')}\n")
                     f.write(f"R: {c.get('resposta', '')}\n")
-                    if c.get("imagem_filename"):
-                        f.write(f"Imagem: {c['imagem_filename']}\n")
                     f.write("-" * 40 + "\n")
 
             self.log("─" * 50)
@@ -586,11 +511,6 @@ class FlashcardApp(ctk.CTk):
 
     def on_closing(self):
         """Chamado quando a janela é fechada pelo usuário."""
-        if self.ollama_process:
-            try:
-                self.ollama_process.terminate()
-            except:
-                pass
         self.destroy()
 
 

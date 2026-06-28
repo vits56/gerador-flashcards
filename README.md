@@ -2,9 +2,8 @@
 
 O **Gerador de Flashcards Anki** é uma ferramenta de desktop para estudantes e concurseiros. Ele usa inteligência artificial para ler seus PDFs ou textos e gerar automaticamente dezenas de flashcards formatados para o **Anki** (`.apkg`).
 
-Suporta **dois modos de IA**:
-- ☁️ **Groq (Llama 3.3 70B)** — API gratuita na nuvem, sem cartão de crédito.
-- 🖥️ **Ollama (IA Local)** — Processa tudo no seu computador, sem internet.
+Suporta IA baseada em Nuvem:
+- ☁️ **Groq (Llama 3)** — API gratuita na nuvem, sem cartão de crédito.
 
 ---
 
@@ -44,12 +43,10 @@ O app usa a IA do Groq para gerar os flashcards. Você precisa de uma chave de A
 ## 🌟 Funcionalidades
 
 - 📄 **Leitura Inteligente de PDFs** — Extrai o texto do material de estudo, filtrando cabeçalhos e numerações de página.
-- 🖼️ **Imagens do PDF nos Flashcards** — Imagens presentes no PDF são automaticamente extraídas, convertidas para PNG, e **distribuídas de forma inteligente** entre os cartões do Anki — cada imagem é associada a um flashcard diferente para máxima cobertura visual.
 - 📝 **Modo Texto Livre** — Cole trechos de resumos, anotações ou leis para gerar flashcards instantaneamente.
-- ☁️ **Groq / Llama 3.3 70B (Nuvem)** — API gratuita de alta performance. Ideal para quem quer rapidez.
-- 🖥️ **Ollama (IA Local)** — Processa tudo offline no seu próprio computador. O app detecta e inicia o Ollama automaticamente.
+- ☁️ **Groq / Llama 3 (Nuvem)** — API gratuita de alta performance. Ideal para quem quer rapidez.
 - 🛡️ **Validação com Pydantic** — Garante que a resposta da IA sempre respeite o formato Pergunta/Resposta. Cards mal gerados são ignorados silenciosamente.
-- 💾 **Exportação nativa `.apkg`** — Pronto para importar no Anki com 1 clique. Inclui imagens embutidas no pacote.
+- 💾 **Exportação nativa `.apkg`** — Pronto para importar no Anki com 1 clique.
 - 🎨 **Destaques Visuais** — Números, prazos e percentuais aparecem em **vermelho**. Palavras-chave jurídicas (VEDADO, SEMPRE, NUNCA, etc.) aparecem em **azul**. Funciona no modo claro e noturno do Anki.
 - ⚙️ **Fail-Safe** — Erros em um bloco de texto nunca interrompem o processamento do restante.
 - 🔐 **Chave salva localmente** — Você insere a chave uma única vez; o app a salva para as próximas sessões.
@@ -166,10 +163,6 @@ No seletor **"🧠 Inteligência Artificial"**, você pode escolher:
 |---|---|
 | `llama-3.3-70b-versatile` | Groq na nuvem (rápido, requer chave API) |
 | `llama-3.1-8b-instant` | Groq na nuvem — modelo menor e mais rápido |
-| `Ollama: llama3.2` | IA local rápida — (recomendado) requer Ollama instalado |
-| `Ollama: llama3.1` | IA local — requer Ollama instalado |
-
-> Para usar o Ollama, instale-o em [ollama.com](https://ollama.com) e baixe um modelo: `ollama pull llama3.2`
 
 ### Inserindo a Chave da API
 
@@ -200,7 +193,7 @@ Após a geração, dois arquivos serão criados na sua **pasta Downloads**:
 
 | Arquivo | Descrição |
 |---|---|
-| `NomeDoArquivo_Flashcards.apkg` | O baralho pronto para importar no Anki (com imagens embutidas) |
+| `NomeDoArquivo_Flashcards.apkg` | O baralho pronto para importar no Anki |
 | `NomeDoArquivo_Relatorio.txt` | Relatório com todos os flashcards em texto, para revisão |
 
 **Para importar no Anki:**
@@ -218,8 +211,7 @@ Após a geração, dois arquivos serão criados na sua **pasta Downloads**:
 | **Python 3** | Linguagem base |
 | **CustomTkinter** | Interface gráfica moderna com Dark Mode |
 | **PyMuPDF (fitz)** | Extração de texto e imagens de PDFs |
-| **Groq API** | Motor de LLM na nuvem (Llama 3.3 70B) |
-| **Ollama** | Motor de LLM local (offline) |
+| **Groq API** | Motor de LLM na nuvem (Llama 3) |
 | **Pydantic** | Validação estrita do JSON gerado pela IA |
 | **GenAnki** | Criação dos pacotes `.apkg` para o Anki |
 | **Pytest** | Testes automatizados |
@@ -240,12 +232,6 @@ Após a geração, dois arquivos serão criados na sua **pasta Downloads**:
 
 **Onde fica o arquivo `.apkg` gerado?**
 > Na sua **pasta Downloads** (`C:\Users\SeuNome\Downloads`).
-
-**As imagens do PDF aparecem nos flashcards?**
-> Sim! A partir da v1.6.0, todas as imagens do PDF são extraídas, convertidas para PNG, e distribuídas entre os flashcards automaticamente. Elas aparecem no verso do cartão, abaixo da resposta.
-
-**Posso usar sem internet?**
-> Sim! Selecione o motor **Ollama** no app. Você precisa ter o [Ollama](https://ollama.com) instalado e um modelo baixado (ex: `ollama pull llama3.2`). O app inicia o Ollama automaticamente se ele não estiver rodando, e o **encerra ao fechar o app** para liberar a memória RAM do seu PC.
 
 **A chave `gsk_...` é segura?**
 > Ela é salva apenas no arquivo `config.json` local na sua máquina (em `~/.GeradorFlashcardsAnki/`). Ela nunca é enviada para nenhum servidor além do próprio Groq. O arquivo está listado no `.gitignore` para **nunca ser enviado ao GitHub** acidentalmente.

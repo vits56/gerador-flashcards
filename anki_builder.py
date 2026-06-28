@@ -96,22 +96,6 @@ class AnkiBuilder:
     color: #64b5f6;
 }
 
-/* ── Imagem ── */
-.card-image {
-    max-width: 95%;
-    max-height: 300px;
-    object-fit: contain;
-    margin-top: 16px;
-    border-radius: 8px;
-    border: 1px solid #cccccc;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-}
-.nightMode .card-image {
-    border-color: #444;
-}
 
 /* ── Separador ── */
 hr#answer {
@@ -123,22 +107,18 @@ hr#answer {
         # Template da frente: mostra apenas a pergunta
         frente = '<div class="pergunta">{{Pergunta}}</div>'
 
-        # Template do verso: pergunta + linha + resposta + imagem (se houver)
+        # Template do verso: pergunta + linha + resposta
         verso = """{{FrontSide}}
 <hr id="answer">
-<div class="resposta">{{Resposta}}</div>
-{{#Imagem}}
-<div style="text-align: center;">{{Imagem}}</div>
-{{/Imagem}}"""
+<div class="resposta">{{Resposta}}</div>"""
 
-        # Criação do modelo de cartão do Anki (Pergunta / Resposta / Imagem opcional)
+        # Criação do modelo de cartão do Anki (Pergunta / Resposta)
         self.model = genanki.Model(
             self.model_id,
-            'Modelo Flashcard IA com Imagem',
+            'Modelo Flashcard IA',
             fields=[
                 {'name': 'Pergunta'},
                 {'name': 'Resposta'},
-                {'name': 'Imagem'},   # Vazio quando não há imagem
             ],
             templates=[
                 {
@@ -155,42 +135,20 @@ hr#answer {
     def export_deck(
         self,
         cards_list: List[Dict],
-        output_filename: str = "Flashcards_Gerados.apkg",
-        media_files: List[Tuple[str, bytes]] = None
+        output_filename: str = "Flashcards_Gerados.apkg"
     ):
         """
-        Recebe a lista de dicionários (perguntas, respostas e imagens opcionais)
+        Recebe a lista de dicionários (perguntas, respostas)
         e exporta para um arquivo .apkg.
 
-        cards_list: List de dicts com chaves 'pergunta', 'resposta',
-                    e opcionalmente 'imagem_filename' (nome do arquivo de imagem).
-        media_files: Lista de (filename, bytes) com as imagens a incluir no pacote.
+        cards_list: List de dicts com chaves 'pergunta', 'resposta'.
         """
         if not cards_list:
             raise ValueError("A lista de flashcards fornecida está vazia.")
 
-        if media_files is None:
-            media_files = []
-
-        # Salva os arquivos de mídia em um diretório temporário para o genanki
-        temp_media_paths = []
-        temp_dir = os.path.join(os.path.dirname(os.path.abspath(output_filename)), "_anki_media_temp")
-        if media_files:
-            os.makedirs(temp_dir, exist_ok=True)
-            for fname, fbytes in media_files:
-                fpath = os.path.join(temp_dir, fname)
-                with open(fpath, "wb") as f:
-                    f.write(fbytes)
-                temp_media_paths.append(fpath)
-
         for card_data in cards_list:
             pergunta = card_data.get("pergunta", "")
             resposta = card_data.get("resposta", "")
-            imagem_fname = card_data.get("imagem_filename", "") or ""
-            if imagem_fname:
-                imagem_html = f'<img class="card-image" src="{imagem_fname}">'
-            else:
-                imagem_html = ""
 
             # Aplica destaques de palavras importantes
             pergunta_html = highlight_important(pergunta)
@@ -199,25 +157,10 @@ hr#answer {
             if pergunta and resposta:
                 note = genanki.Note(
                     model=self.model,
-                    fields=[pergunta_html, resposta_html, imagem_html]
+                    fields=[pergunta_html, resposta_html]
                 )
                 self.deck.add_note(note)
 
-        # Empacota o deck com as mídias e escreve o arquivo final
+        # Empacota o deck e escreve o arquivo final
         package = genanki.Package(self.deck)
-        if temp_media_paths:
-            package.media_files = temp_media_paths
-
         package.write_to_file(output_filename)
-
-        # Limpa arquivos temporários de mídia
-        for fpath in temp_media_paths:
-            try:
-                os.remove(fpath)
-            except Exception:
-                pass
-        if temp_media_paths and os.path.isdir(temp_dir):
-            try:
-                os.rmdir(temp_dir)
-            except Exception:
-                pass

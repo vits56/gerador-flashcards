@@ -2,8 +2,7 @@ from groq import Groq
 import json
 import re
 import time
-import urllib.request
-import urllib.error
+
 from typing import List, Dict, Callable, Optional
 from pydantic import BaseModel, ValidationError
 
@@ -146,68 +145,3 @@ class GroqFlashcardEngine(BaseFlashcardEngine):
         return []
 
 
-class OllamaFlashcardEngine(BaseFlashcardEngine):
-    def __init__(
-        self,
-        model_name: str = "llama3.1",
-        log_callback: Optional[Callable[[str], None]] = None
-    ):
-        super().__init__(log_callback)
-        self.model_name = model_name.replace("Ollama: ", "").strip()
-        self.url = "http://127.0.0.1:11434/api/chat"
-
-    def generate_flashcards(self, text_chunk: str) -> List[Dict[str, str]]:
-        payload = {
-            "model": self.model_name,
-            "messages": [
-                {"role": "system", "content": self.system_instruction},
-                {"role": "user", "content": "Analise o texto abaixo seguindo rigorosamente as regras do sistema. Filtre as enrolações e questões de prova, extraindo apenas os dados teóricos essenciais. Gere os flashcards correspondentes em JSON:\n\n" + text_chunk}
-            ],
-            "format": "json",
-            "stream": False,
-            "options": {
-                "temperature": 0.3,
-                "num_ctx": 4096
-            }
-        }
-        
-        req = urllib.request.Request(
-            self.url,
-            data=json.dumps(payload).encode('utf-8'),
-            headers={'Content-Type': 'application/json'},
-            method='POST'
-        )
-        
-        try:
-            with urllib.request.urlopen(req, timeout=1200) as response:
-                result = json.loads(response.read().decode('utf-8'))
-                output_text = result.get("message", {}).get("content", "")
-                
-                raw_flashcards = self._extract_json_from_text(output_text)
-                
-                if not raw_flashcards:
-                    self._log("     ⚠️ Modelo local não retornou flashcards válidos neste bloco.")
-                    return []
-                    
-                valid_cards = []
-                for card in raw_flashcards:
-                    try:
-                        validated = FlashcardSchema.model_validate(card)
-                        valid_cards.append({
-                            "pergunta": validated.pergunta,
-                            "resposta": validated.resposta
-                        })
-                    except ValidationError:
-                        continue
-                return valid_cards
-                
-        except urllib.error.HTTPError as e:
-            error_body = e.read().decode('utf-8', errors='ignore')
-            self._log(f"     ❌ Erro do Ollama (Código {e.code}): {error_body}")
-            return []
-        except urllib.error.URLError as e:
-            self._log(f"     ❌ Erro de conexão com o Ollama: {e.reason}. Verifique se o Ollama está rodando.")
-            return []
-        except Exception as e:
-            self._log(f"     ❌ Erro desconhecido com Ollama: {str(e)}")
-            return []
