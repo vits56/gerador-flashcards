@@ -168,10 +168,12 @@ class FlashcardApp(ctk.CTk):
 
     # ─── Interface ─────────────────────────────────────────────────
     def setup_ui(self):
+        self.configure(fg_color="#1e1e1e")
+        
         # Título
         ctk.CTkLabel(
             self, text="Gerador de Flashcards Anki 🧠",
-            font=("Helvetica", 22, "bold")
+            font=("Segoe UI", 24, "bold"), text_color="#ffffff"
         ).pack(pady=(20, 10))
 
         # ==========================================
@@ -180,7 +182,15 @@ class FlashcardApp(ctk.CTk):
         card_file = ctk.CTkFrame(self, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
         card_file.pack(pady=(10, 20), padx=30, fill="x")
 
-        self.tabview = ctk.CTkTabview(card_file, height=150)
+        self.tabview = ctk.CTkTabview(
+            card_file, height=150,
+            fg_color="#2d2d2d",
+            segmented_button_fg_color="#3d3d3d",
+            segmented_button_selected_color="#3b82f6",
+            segmented_button_selected_hover_color="#2563eb",
+            segmented_button_unselected_color="#3d3d3d",
+            segmented_button_unselected_hover_color="#444444"
+        )
         self.tabview.pack(pady=10, padx=20, fill="x")
         self.tabview.add("Arquivo PDF")
         self.tabview.add("Texto Livre")
@@ -188,8 +198,11 @@ class FlashcardApp(ctk.CTk):
         # --- Aba PDF ---
         self.btn_select_pdf = ctk.CTkButton(
             self.tabview.tab("Arquivo PDF"),
-            text="📂 Selecionar PDF",
-            command=self.select_pdf
+            text="📄 Selecionar PDF",
+            command=self.select_pdf,
+            fg_color="#3b82f6",
+            hover_color="#2563eb",
+            font=("Segoe UI", 14)
         )
         self.btn_select_pdf.pack(pady=20)
 
@@ -247,8 +260,11 @@ class FlashcardApp(ctk.CTk):
             key_row,
             textvariable=self.api_key_var,
             show="*",
-            placeholder_text="Cole sua chave de API aqui",
-            height=36
+            placeholder_text="Cole sua chave aqui...",
+            height=36,
+            fg_color="#1a1a1a",
+            border_color="#444444",
+            text_color="#ffffff"
         )
         self.entry_api_key.pack(side="left", fill="x", expand=True)
 
@@ -257,19 +273,19 @@ class FlashcardApp(ctk.CTk):
             text="👁",
             width=40,
             height=36,
-            fg_color="gray30",
-            hover_color="gray20",
+            fg_color="#444444",
+            hover_color="#555555",
             command=self.toggle_api_key_visibility
         )
-        self.btn_toggle_key.pack(side="left", padx=(6, 0))
+        self.btn_toggle_key.pack(side="left", padx=(10, 0))
 
         ctk.CTkLabel(
             api_frame,
             text="🔒 Salva automaticamente no seu computador após o primeiro uso.",
-            font=("Helvetica", 10),
-            text_color="gray",
+            font=("Segoe UI", 12),
+            text_color="#9ca3af",
             anchor="w"
-        ).pack(anchor="w", pady=(4, 0))
+        ).pack(anchor="w", pady=(8, 0))
 
         # ==========================================
         # CARD 3: Motor de Inteligência Artificial
@@ -361,17 +377,17 @@ class FlashcardApp(ctk.CTk):
 
         # Botão Gerar
         self.btn_generate = ctk.CTkButton(
-            self, text="⚡ Gerar Flashcards",
+            self, text="⏳ Gerar Flashcards",
             command=self.start_generation_thread,
-            height=55, font=("Helvetica", 18, "bold"),
-            fg_color="#28a745", hover_color="#218838"
+            height=55, font=("Segoe UI", 18, "bold"),
+            fg_color="#22c55e", hover_color="#16a34a"
         )
-        self.btn_generate.pack(pady=(20, 20), padx=40, fill="x")
+        self.btn_generate.pack(pady=(10, 25), padx=40, fill="x")
 
         # ==========================================
         # TERMINAL DE STATUS
         # ==========================================
-        terminal_frame = ctk.CTkFrame(self, fg_color="#0f172a", corner_radius=8, border_width=2, border_color="#3b82f6")
+        terminal_frame = ctk.CTkFrame(self, fg_color="#0f172a", corner_radius=8, border_width=1, border_color="#334155")
         terminal_frame.pack(pady=(0, 20), padx=40, fill="both", expand=True)
 
         # Header do Terminal
@@ -380,10 +396,10 @@ class FlashcardApp(ctk.CTk):
         
         ctk.CTkLabel(
             header_frame, text="STATUS DO PROCESSAMENTO", 
-            font=("Helvetica", 11, "bold"), text_color="#94a3b8"
+            font=("Segoe UI", 12, "bold"), text_color="#94a3b8"
         ).pack(side="left", padx=5)
 
-        separator = ctk.CTkFrame(terminal_frame, height=1, fg_color="#334155")
+        separator = ctk.CTkFrame(terminal_frame, height=1, fg_color="#1e293b")
         separator.pack(fill="x", padx=10, pady=5)
 
         # Corpo do Terminal (Output)
