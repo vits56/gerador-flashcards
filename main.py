@@ -131,8 +131,8 @@ class FlashcardApp(ctk.CTk):
         super().__init__()
 
         self.title("Gerador de Flashcards Anki (Groq API)")
-        self.geometry("750x950")
-        self.minsize(700, 900)   # Tamanho mínimo para a janela
+        self.geometry("850x1050")
+        self.minsize(800, 950)   # Tamanho mínimo para a janela
 
         self.selected_pdf_path = None
         self._show_api_key = False  # Controla visibilidade da chave
@@ -342,10 +342,11 @@ class FlashcardApp(ctk.CTk):
         # LogBox (Painel de Status em Destaque)
         self.log_box = ctk.CTkTextbox(
             self, 
-            height=250, 
+            height=400, 
             state="disabled",
-            font=("Helvetica", 15, "bold"),
-            border_width=2,
+            font=("Helvetica", 17, "bold"),
+            border_width=3,
+            border_spacing=20,
             border_color="#4da6ff",
             wrap="word"
         )
