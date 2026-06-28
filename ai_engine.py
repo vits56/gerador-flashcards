@@ -16,26 +16,27 @@ class FlashcardSchema(BaseModel):
 class BaseFlashcardEngine:
     def __init__(self, log_callback: Optional[Callable[[str], None]] = None):
         self._log = log_callback or print
-        self.system_instruction = """Você é um professor especialista na criação de flashcards de alto rendimento para provas de concursos públicos brasileiros.
+        self.system_instruction = """Você é um assistente cirúrgico de extração de dados para flashcards de concursos públicos. 
 
-Sua tarefa é analisar o texto fornecido e extrair APENAS as informações que têm alto potencial de cobrança em provas objetivas, ignorando qualquer conteúdo que seja apenas contexto, introdução ou enrolação.
+REGRA DE OURO (ATERRAMENTO):
+Você deve basear as perguntas e respostas ESTRITAMENTE e EXCLUSIVAMENTE no texto fornecido. É terminantemente PROIBIDO inventar dados, usar conhecimentos externos ou criar flashcards sobre assuntos que não estão claramente escritos no texto. Se o texto não contiver informações úteis para prova, retorne um JSON vazio: {"flashcards": []}.
 
-Concentre-se em criar flashcards cirúrgicos sobre:
-- Prazos, datas, quóruns, idades e penalidades (Literalidade da Lei).
-- Regras gerais e, principalmente, suas EXCEÇÕES.
-- Definições teóricas diretas e classificações importantes.
-- Competências exclusivas e privativas de órgãos, autoridades ou entes.
-- Palavras-chave restritivas (ex: "somente", "vedado", "prescindível").
+REGRA DE EXCLUSÃO (O QUE IGNORAR):
+1. IGNORE sumariamente exercícios, listas de questões de múltipla escolha e gabaritos. Se o texto contiver opções como "a)", "b)", "c)", não crie flashcards sobre essa parte.
+2. IGNORE resumos que apenas repetem o que já foi dito.
+3. IGNORE exemplos hipotéticos, motivações do autor e introduções históricas.
 
-REGRAS RIGOROSAS:
-- Filtro de Relevância: IGNORE introduções históricas, exemplos longos, motivações do autor do texto ou conceitos óbvios.
-- Atomicidade: Cada flashcard deve cobrar apenas UMA informação. A resposta deve ser curta, direta e ter no máximo 2 a 3 linhas.
-- Imagens: Se o texto contiver marcações de imagens (ex: [IMAGEM_X]), avalie se ela é importante. Se for, insira a tag exatamente como está no texto na "pergunta" ou na "resposta" para que o sistema a exiba.
+O QUE EXTRAIR (FOCO TOTAL):
+Extraia apenas conceitos teóricos de alta incidência: prazos, competências exclusivas/privativas de órgãos, regras gerais, exceções importantes e trechos com palavras restritivas/permissivas (ex: 'vedado', 'salvo', 'poderá', 'deverá'). 
 
-Responda EXCLUSIVAMENTE com um JSON válido neste exato formato, sem explicações antes ou depois:
+FORMATAÇÃO DA SAÍDA:
+A "pergunta" deve ser direta e em linguagem de banca examinadora. 
+A "resposta" não pode conter letras de alternativas de múltipla escolha e deve ser concisa (máximo de 2 a 3 linhas).
+Se o texto citar uma [IMAGEM_X] e ela for essencial para a teoria, inclua essa exata tag na pergunta ou na resposta.
+
+Responda EXCLUSIVAMENTE com um JSON válido neste exato formato, sem qualquer texto ou explicação antes ou depois:
 {
   "flashcards": [
-    {"pergunta": "...", "resposta": "..."},
     {"pergunta": "...", "resposta": "..."}
   ]
 }"""
@@ -87,7 +88,7 @@ class GroqFlashcardEngine(BaseFlashcardEngine):
                     model=self.model_name,
                     messages=[
                         {"role": "system", "content": self.system_instruction},
-                        {"role": "user", "content": "Analise o texto abaixo, filtre a enrolação e crie flashcards concisos APENAS com os dados que seriam cobrados por uma banca examinadora rigorosa:\n\n" + text_chunk}
+                        {"role": "user", "content": "Analise o texto abaixo seguindo rigorosamente as regras do sistema. Filtre as enrolações e questões de prova, extraindo apenas os dados teóricos essenciais. Gere os flashcards correspondentes em JSON:\n\n" + text_chunk}
                     ],
                     temperature=0.3,
                     max_tokens=1500,
@@ -160,7 +161,7 @@ class OllamaFlashcardEngine(BaseFlashcardEngine):
             "model": self.model_name,
             "messages": [
                 {"role": "system", "content": self.system_instruction},
-                {"role": "user", "content": "Analise o texto abaixo, filtre a enrolação e crie flashcards concisos APENAS com os dados que seriam cobrados por uma banca examinadora rigorosa:\n\n" + text_chunk}
+                {"role": "user", "content": "Analise o texto abaixo seguindo rigorosamente as regras do sistema. Filtre as enrolações e questões de prova, extraindo apenas os dados teóricos essenciais. Gere os flashcards correspondentes em JSON:\n\n" + text_chunk}
             ],
             "format": "json",
             "stream": False,

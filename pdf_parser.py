@@ -38,6 +38,11 @@ class PDFParser:
                 text += " ".join(cleaned_lines) + " "
             doc.close()
             final_text = text.strip()
+            
+            for keyword in ["QUESTÕES COMENTADAS", "LISTA DE QUESTÕES", "GABARITO"]:
+                if keyword in final_text:
+                    final_text = final_text.split(keyword)[0]
+            
             self.char_count = len(final_text)
             return final_text
         except Exception as e:
@@ -97,11 +102,18 @@ class PDFParser:
 
             # Extrai texto limpo e imagens por página
             pages_data = []
+            stop_processing = False
             for idx, page in enumerate(doc):
                 if progress_callback:
                     progress_callback(f"📄 Lendo página {idx+1} de {self.page_count}...")
                 
                 page_text = page.get_text()
+                
+                for keyword in ["QUESTÕES COMENTADAS", "LISTA DE QUESTÕES", "GABARITO"]:
+                    if keyword in page_text:
+                        page_text = page_text.split(keyword)[0]
+                        stop_processing = True
+                
                 lines = page_text.split('\n')
                 cleaned_lines = []
                 for line in lines:
@@ -115,6 +127,9 @@ class PDFParser:
                 page_text_clean = " ".join(cleaned_lines)
                 page_images = self._extract_page_images(page, doc)
                 pages_data.append({"text": page_text_clean, "images": page_images})
+                
+                if stop_processing:
+                    break
 
             doc.close()
 
