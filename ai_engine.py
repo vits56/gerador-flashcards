@@ -3,7 +3,7 @@ import json
 import re
 import time
 
-from typing import List, Dict, Callable, Optional
+from typing import List, Dict, Callable, Optional, Tuple
 from pydantic import BaseModel, ValidationError
 
 
@@ -79,7 +79,7 @@ class GroqFlashcardEngine(BaseFlashcardEngine):
         self.model_name = model_name
         self.client = Groq(api_key=self.api_key)
 
-    def generate_flashcards(self, text_chunk: str) -> List[Dict[str, str]]:
+    def generate_flashcards(self, text_chunk: str) -> Tuple[List[Dict[str, str]], int]:
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -95,11 +95,15 @@ class GroqFlashcardEngine(BaseFlashcardEngine):
                 )
 
                 output_text = response.choices[0].message.content or ""
+                tokens_used = 0
+                if hasattr(response, 'usage') and response.usage:
+                    tokens_used = response.usage.total_tokens
+
                 raw_flashcards = self._extract_json_from_text(output_text)
 
                 if not raw_flashcards:
                     self._log("     ⚠️ Modelo não retornou flashcards válidos neste bloco.")
-                    return []
+                    return [], tokens_used
 
                 valid_cards = []
                 for card in raw_flashcards:
@@ -112,7 +116,7 @@ class GroqFlashcardEngine(BaseFlashcardEngine):
                     except ValidationError:
                         continue
 
-                return valid_cards
+                return valid_cards, tokens_used
 
             except Exception as e:
                 error_str = str(e)
@@ -141,7 +145,7 @@ class GroqFlashcardEngine(BaseFlashcardEngine):
                     continue
 
                 self._log(f"     ❌ Erro na API Groq: {error_str}")
-                return []
-        return []
+                return [], 0
+        return [], 0
 
 

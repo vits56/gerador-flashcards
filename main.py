@@ -78,14 +78,61 @@ class ApiKeyHelpWindow(ctk.CTkToplevel):
             height=36
         ).pack(pady=(0, 15), padx=30, fill="x")
 
+class SummaryWindow(ctk.CTkToplevel):
+    def __init__(self, parent, model_name, qty, tokens, output_path):
+        super().__init__(parent)
+        self.title("Resumo da Geração")
+        self.geometry("450x380")
+        self.resizable(False, False)
+        self.grab_set()
+        self.focus()
+
+        ctk.CTkLabel(
+            self, text="📊 Resumo da Geração",
+            font=("Helvetica", 18, "bold")
+        ).pack(pady=(20, 15))
+
+        details = (
+            f"• Motor utilizado: {model_name}\n\n"
+            f"• Flashcards gerados: {qty} cartões\n\n"
+            f"• Custo da operação: {tokens} tokens gastos\n\n"
+            f"• Seu Saldo Atual: Ilimitado (API Gratuita Groq)"
+        )
+
+        ctk.CTkLabel(
+            self, text=details, font=("Helvetica", 13),
+            justify="left", anchor="w"
+        ).pack(padx=40, fill="x")
+
+        ctk.CTkLabel(
+            self, 
+            text="💡 Lembre-se: O Modo Avançado consome mais tokens por leitura, mas garante a máxima precisão para os seus estudos.",
+            font=("Helvetica", 11, "italic"),
+            text_color="#4da6ff",
+            wraplength=390, justify="left"
+        ).pack(pady=(15, 10), padx=30, fill="x")
+        
+        ctk.CTkLabel(
+            self,
+            text=f"Arquivo salvo em:\n{output_path}",
+            font=("Helvetica", 11),
+            text_color="gray",
+            wraplength=390, justify="left"
+        ).pack(pady=(5, 15), padx=30, fill="x")
+
+        ctk.CTkButton(
+            self, text="Fechar", command=self.destroy,
+            height=36, fg_color="gray30", hover_color="gray20"
+        ).pack(pady=(0, 20), padx=30, fill="x")
+
 
 class FlashcardApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
         self.title("Gerador de Flashcards Anki (Groq API)")
-        self.geometry("660x750")
-        self.minsize(560, 650)   # Tamanho mínimo para a janela
+        self.geometry("750x950")
+        self.minsize(700, 900)   # Tamanho mínimo para a janela
 
         self.selected_pdf_path = None
         self._show_api_key = False  # Controla visibilidade da chave
@@ -215,26 +262,73 @@ class FlashcardApp(ctk.CTk):
         ).pack(anchor="w", pady=(2, 0))
 
         # --- Seção de Seleção de Modelo ---
-        model_frame = ctk.CTkFrame(self, fg_color="transparent")
+        model_frame = ctk.CTkFrame(self)
         model_frame.pack(pady=(2, 10), padx=30, fill="x")
 
         ctk.CTkLabel(
             model_frame,
-            text="🧠 Inteligência Artificial:",
-            font=("Helvetica", 12, "bold")
-        ).pack(side="left")
-
-        self.model_var = ctk.StringVar(value="llama-3.3-70b-versatile")
-        self.model_menu = ctk.CTkOptionMenu(
+            text="Escolha o Motor de Inteligência Artificial",
+            font=("Helvetica", 14, "bold")
+        ).pack(pady=(10, 0))
+        
+        ctk.CTkLabel(
             model_frame,
-            variable=self.model_var,
-            values=[
-                "llama-3.3-70b-versatile",
-                "llama-3.1-8b-instant"
-            ],
+            text="Selecione qual nível de processamento o aplicativo deve usar para ler o seu PDF e extrair os flashcards:",
+            font=("Helvetica", 12),
+            text_color="gray",
+            wraplength=550
+        ).pack(pady=(0, 10), padx=10)
+
+        self.model_var = ctk.StringVar(value="llama-3.1-8b-instant")
+        
+        # Radio Rápido
+        self.rb_fast = ctk.CTkRadioButton(
+            model_frame, 
+            text="⚡ Modo Rápido e Econômico (Llama 3.1 - 8B)",
+            variable=self.model_var, 
+            value="llama-3.1-8b-instant",
+            font=("Helvetica", 13, "bold"),
             command=self.on_model_change
         )
-        self.model_menu.pack(side="right", fill="x", expand=True, padx=(10, 0))
+        self.rb_fast.pack(anchor="w", padx=20, pady=(5, 0))
+        
+        ctk.CTkLabel(
+            model_frame,
+            text="• Ideal para: Lei seca, listas, conceitos diretos e revisões rápidas.\n• Como funciona: É um modelo ágil que processa seus PDFs em poucos segundos e economiza seus tokens. Perfeito para gerar grandes volumes de flashcards gastando menos.",
+            font=("Helvetica", 11),
+            text_color="gray",
+            justify="left",
+            wraplength=550
+        ).pack(anchor="w", padx=45, pady=(0, 10))
+
+        # Radio Avançado
+        self.rb_advanced = ctk.CTkRadioButton(
+            model_frame, 
+            text="🧠 Modo Avançado e Analítico (Llama 3.3 - 70B)",
+            variable=self.model_var, 
+            value="llama-3.3-70b-versatile",
+            font=("Helvetica", 13, "bold"),
+            command=self.on_model_change
+        )
+        self.rb_advanced.pack(anchor="w", padx=20, pady=(5, 0))
+        
+        ctk.CTkLabel(
+            model_frame,
+            text="• Ideal para: Doutrina densa, jurisprudência complexa e \"pegadinhas\" de banca.\n• Como funciona: É o nosso motor mais potente e inteligente. Ele possui uma capacidade de interpretação superior para extrair exceções e detalhes sutis do texto, mas consome uma quantidade maior de tokens durante o processamento.",
+            font=("Helvetica", 11),
+            text_color="gray",
+            justify="left",
+            wraplength=550
+        ).pack(anchor="w", padx=45, pady=(0, 10))
+
+        ctk.CTkLabel(
+            model_frame,
+            text="💡 Dica de Estudo: Use o Modo Econômico para materiais resumidos e PDFs de revisão. Reserve o Modo Avançado para aquele PDF pesado e complexo onde cada detalhe da teoria pode custar pontos preciosos na prova.",
+            font=("Helvetica", 11, "italic"),
+            text_color="#4da6ff",
+            justify="left",
+            wraplength=550
+        ).pack(anchor="w", padx=20, pady=(5, 10))
 
         # Botão Gerar
         self.btn_generate = ctk.CTkButton(
@@ -259,7 +353,7 @@ class FlashcardApp(ctk.CTk):
 
 
 
-    def on_model_change(self, choice):
+    def on_model_change(self, choice=None):
         self.entry_api_key.configure(state="normal", placeholder_text="Cole sua chave de API aqui")
 
     def _setup_placeholder(self, textbox: ctk.CTkTextbox, placeholder: str):
@@ -353,7 +447,8 @@ class FlashcardApp(ctk.CTk):
         self.entry_api_key.configure(state="disabled")
         self.btn_toggle_key.configure(state="disabled")
         self.textbox_input.configure(state="disabled")
-        self.model_menu.configure(state="disabled")
+        self.rb_fast.configure(state="disabled")
+        self.rb_advanced.configure(state="disabled")
         self.update_progress(0)
         self.log("─" * 50)
         self.log("🚀 Iniciando geração de flashcards...")
@@ -416,12 +511,14 @@ class FlashcardApp(ctk.CTk):
 
             all_flashcards = []
             eta_per_chunk = None
+            total_tokens_used = 0
 
             for i, chunk_text in enumerate(text_chunks):
                 chunk_start = time.time()
 
                 self.log(f"  🔄 Bloco {i+1}/{total_chunks}...")
-                cards = engine.generate_flashcards(chunk_text)
+                cards, tokens = engine.generate_flashcards(chunk_text)
+                total_tokens_used += tokens
                 chunk_end = time.time()
                 
                 if i == 0 and total_chunks > 1:
@@ -484,11 +581,12 @@ class FlashcardApp(ctk.CTk):
             self.log(f"   → {report_path}")
 
             total = len(all_flashcards)
-            self.after(0, lambda: messagebox.showinfo(
-                "Sucesso! 🎉",
-                f"Foram gerados {total} flashcards!\n\n"
-                f"Arquivo salvo em:\n{output_path}\n\n"
-                "Abra o Anki e dê duplo clique no arquivo .apkg para importar!"
+            self.after(0, lambda: SummaryWindow(
+                self,
+                model_name=model_name,
+                qty=total,
+                tokens=total_tokens_used,
+                output_path=output_path
             ))
 
         except Exception as e:
@@ -506,7 +604,8 @@ class FlashcardApp(ctk.CTk):
         self.entry_api_key.configure(state="normal")
         self.btn_toggle_key.configure(state="normal")
         self.textbox_input.configure(state="normal")
-        self.model_menu.configure(state="normal")
+        self.rb_fast.configure(state="normal")
+        self.rb_advanced.configure(state="normal")
         self.log("✔️ Processamento finalizado.")
         self.log("─" * 50)
 
