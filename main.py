@@ -334,19 +334,27 @@ class FlashcardApp(ctk.CTk):
         self.btn_generate = ctk.CTkButton(
             self, text="⚡ Gerar Flashcards",
             command=self.start_generation_thread,
-            height=45, font=("Helvetica", 15, "bold"),
+            height=55, font=("Helvetica", 18, "bold"),
             fg_color="#28a745", hover_color="#218838"
         )
-        self.btn_generate.pack(pady=(16, 8))
+        self.btn_generate.pack(pady=(25, 15), padx=40, fill="x")
+
+        # LogBox (Painel de Status em Destaque)
+        self.log_box = ctk.CTkTextbox(
+            self, 
+            height=250, 
+            state="disabled",
+            font=("Helvetica", 15, "bold"),
+            border_width=2,
+            border_color="#4da6ff",
+            wrap="word"
+        )
+        self.log_box.pack(pady=(5, 15), padx=40, fill="both", expand=True)
 
         # Barra de Progresso
-        self.progress_bar = ctk.CTkProgressBar(self, mode="determinate")
-        self.progress_bar.pack(pady=6, fill="x", padx=40)
+        self.progress_bar = ctk.CTkProgressBar(self, mode="determinate", height=18)
+        self.progress_bar.pack(pady=(0, 20), fill="x", padx=40)
         self.progress_bar.set(0)
-
-        # LogBox
-        self.log_box = ctk.CTkTextbox(self, height=200, state="disabled")
-        self.log_box.pack(pady=10, padx=20, fill="both", expand=True)
 
         # Chama inicialização do modelo
         self.on_model_change(self.model_var.get())
