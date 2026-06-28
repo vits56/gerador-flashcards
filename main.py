@@ -298,24 +298,15 @@ class FlashcardApp(ctk.CTk):
             )
             return
 
-        active_tab = self.tabview.get()
-        if active_tab == "Arquivo PDF" and not self.selected_pdf_path:
+        if not self.selected_pdf_path:
             messagebox.showerror("PDF não selecionado", "Selecione um arquivo PDF antes de gerar.")
             return
-
-        if active_tab == "Texto Livre":
-            placeholder = "Cole o texto do seu resumo aqui..."
-            texto = self.textbox_input.get("1.0", "end-1c").strip()
-            if not texto or texto == placeholder:
-                messagebox.showerror("Texto vazio", "Cole um texto na aba 'Texto Livre' antes de gerar.")
-                return
 
         # Desabilita controles
         self.btn_generate.configure(state="disabled", text="⏳ Gerando...")
         self.btn_select_pdf.configure(state="disabled")
         self.entry_api_key.configure(state="disabled")
         self.btn_toggle_key.configure(state="disabled")
-        self.textbox_input.configure(state="disabled")
         self.rb_fast.configure(state="disabled")
         self.rb_advanced.configure(state="disabled")
         self.update_progress(0)
@@ -452,11 +443,10 @@ class FlashcardApp(ctk.CTk):
 
     def _finish_processing_safe(self):
         """Reabilita os controles — DEVE ser chamado na thread principal via after()."""
-        self.btn_generate.configure(state="normal", text="⚡ Gerar Flashcards")
+        self.btn_generate.configure(state="normal", text="⏳ Gerar Flashcards")
         self.btn_select_pdf.configure(state="normal")
         self.entry_api_key.configure(state="normal")
         self.btn_toggle_key.configure(state="normal")
-        self.textbox_input.configure(state="normal")
         self.rb_fast.configure(state="normal")
         self.rb_advanced.configure(state="normal")
         self.log("✔️ Processamento finalizado.")
