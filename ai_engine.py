@@ -16,18 +16,23 @@ class FlashcardSchema(BaseModel):
 class BaseFlashcardEngine:
     def __init__(self, log_callback: Optional[Callable[[str], None]] = None):
         self._log = log_callback or print
-        self.system_instruction = """Você é um professor especialista na criação de flashcards para provas de concursos públicos brasileiros.
-Sua tarefa é analisar o texto fornecido e extrair ABSOLUTAMENTE TODAS as informações que possam ser alvo de questões de prova.
-Você deve criar dezenas de flashcards abrangentes cobrindo:
-- Regras gerais e suas exceções.
-- Prazos, datas e penalidades.
-- Definições teóricas, classificações e conceitos.
-- Competências de órgãos, autoridades ou entes.
-- Qualquer detalhe mnemônico ou pegadinha comum em provas.
+        self.system_instruction = """Você é um professor especialista na criação de flashcards de alto rendimento para provas de concursos públicos brasileiros.
 
-Seja exaustivo: não deixe nenhum detalhe de fora.
+Sua tarefa é analisar o texto fornecido e extrair APENAS as informações que têm alto potencial de cobrança em provas objetivas, ignorando qualquer conteúdo que seja apenas contexto, introdução ou enrolação.
 
-Responda EXCLUSIVAMENTE com um JSON válido neste exato formato:
+Concentre-se em criar flashcards cirúrgicos sobre:
+- Prazos, datas, quóruns, idades e penalidades (Literalidade da Lei).
+- Regras gerais e, principalmente, suas EXCEÇÕES.
+- Definições teóricas diretas e classificações importantes.
+- Competências exclusivas e privativas de órgãos, autoridades ou entes.
+- Palavras-chave restritivas (ex: "somente", "vedado", "prescindível").
+
+REGRAS RIGOROSAS:
+- Filtro de Relevância: IGNORE introduções históricas, exemplos longos, motivações do autor do texto ou conceitos óbvios.
+- Atomicidade: Cada flashcard deve cobrar apenas UMA informação. A resposta deve ser curta, direta e ter no máximo 2 a 3 linhas.
+- Imagens: Se o texto contiver marcações de imagens (ex: [IMAGEM_X]), avalie se ela é importante. Se for, insira a tag exatamente como está no texto na "pergunta" ou na "resposta" para que o sistema a exiba.
+
+Responda EXCLUSIVAMENTE com um JSON válido neste exato formato, sem explicações antes ou depois:
 {
   "flashcards": [
     {"pergunta": "...", "resposta": "..."},
@@ -82,7 +87,7 @@ class GroqFlashcardEngine(BaseFlashcardEngine):
                     model=self.model_name,
                     messages=[
                         {"role": "system", "content": self.system_instruction},
-                        {"role": "user", "content": "Crie flashcards para TODOS os detalhes do seguinte texto:\n\n" + text_chunk}
+                        {"role": "user", "content": "Analise o texto abaixo, filtre a enrolação e crie flashcards concisos APENAS com os dados que seriam cobrados por uma banca examinadora rigorosa:\n\n" + text_chunk}
                     ],
                     temperature=0.3,
                     max_tokens=1500,
@@ -155,7 +160,7 @@ class OllamaFlashcardEngine(BaseFlashcardEngine):
             "model": self.model_name,
             "messages": [
                 {"role": "system", "content": self.system_instruction},
-                {"role": "user", "content": "Crie flashcards para TODOS os detalhes do seguinte texto:\n\n" + text_chunk}
+                {"role": "user", "content": "Analise o texto abaixo, filtre a enrolação e crie flashcards concisos APENAS com os dados que seriam cobrados por uma banca examinadora rigorosa:\n\n" + text_chunk}
             ],
             "format": "json",
             "stream": False,
