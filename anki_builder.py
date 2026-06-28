@@ -128,7 +128,7 @@ hr#answer {
 <hr id="answer">
 <div class="resposta">{{Resposta}}</div>
 {{#Imagem}}
-<div><img class="card-image" src="{{Imagem}}"></div>
+<div style="text-align: center;">{{Imagem}}</div>
 {{/Imagem}}"""
 
         # Criação do modelo de cartão do Anki (Pergunta / Resposta / Imagem opcional)
@@ -187,6 +187,10 @@ hr#answer {
             pergunta = card_data.get("pergunta", "")
             resposta = card_data.get("resposta", "")
             imagem_fname = card_data.get("imagem_filename", "") or ""
+            if imagem_fname:
+                imagem_html = f'<img class="card-image" src="{imagem_fname}">'
+            else:
+                imagem_html = ""
 
             # Aplica destaques de palavras importantes
             pergunta_html = highlight_important(pergunta)
@@ -195,7 +199,7 @@ hr#answer {
             if pergunta and resposta:
                 note = genanki.Note(
                     model=self.model,
-                    fields=[pergunta_html, resposta_html, imagem_fname]
+                    fields=[pergunta_html, resposta_html, imagem_html]
                 )
                 self.deck.add_note(note)
 
