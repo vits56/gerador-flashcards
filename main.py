@@ -326,6 +326,7 @@ class FlashcardApp(ctk.CTk):
     # ─── Geração de Flashcards ─────────────────────────────────────
     def start_generation_thread(self):
         """Valida campos antes de iniciar a thread de geração."""
+        api_key = self.api_key_var.get().strip()
         if not api_key:
             messagebox.showerror(
                 "Chave da API ausente",
