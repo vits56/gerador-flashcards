@@ -170,16 +170,19 @@ class FlashcardApp(ctk.CTk):
     def setup_ui(self):
         self.configure(fg_color="#1e1e1e")
         
+        self.main_scroll_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        self.main_scroll_frame.pack(fill="both", expand=True)
+
         # Título
         ctk.CTkLabel(
-            self, text="Gerador de Flashcards Anki 🧠",
+            self.main_scroll_frame, text="Gerador de Flashcards Anki 🧠",
             font=("Segoe UI", 24, "bold"), text_color="#ffffff"
         ).pack(pady=(20, 10))
 
         # ==========================================
         # CARD 1: Seleção de Arquivo / Texto Livre
         # ==========================================
-        card_file = ctk.CTkFrame(self, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
+        card_file = ctk.CTkFrame(self.main_scroll_frame, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
         card_file.pack(pady=(10, 20), padx=30, fill="x")
 
         self.tabview = ctk.CTkTabview(
@@ -227,7 +230,7 @@ class FlashcardApp(ctk.CTk):
         # ==========================================
         # CARD 2: Chave da API
         # ==========================================
-        card_api = ctk.CTkFrame(self, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
+        card_api = ctk.CTkFrame(self.main_scroll_frame, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
         card_api.pack(pady=(0, 20), padx=30, fill="x")
 
         api_frame = ctk.CTkFrame(card_api, fg_color="transparent")
@@ -290,7 +293,7 @@ class FlashcardApp(ctk.CTk):
         # ==========================================
         # CARD 3: Motor de Inteligência Artificial
         # ==========================================
-        card_model = ctk.CTkFrame(self, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
+        card_model = ctk.CTkFrame(self.main_scroll_frame, fg_color="#2d2d2d", corner_radius=10, border_width=1, border_color="#3d3d3d")
         card_model.pack(pady=(0, 20), padx=30, fill="x")
 
         model_frame = ctk.CTkFrame(card_model, fg_color="transparent")
@@ -377,7 +380,7 @@ class FlashcardApp(ctk.CTk):
 
         # Botão Gerar
         self.btn_generate = ctk.CTkButton(
-            self, text="⏳ Gerar Flashcards",
+            self.main_scroll_frame, text="⏳ Gerar Flashcards",
             command=self.start_generation_thread,
             height=55, font=("Segoe UI", 18, "bold"),
             fg_color="#22c55e", hover_color="#16a34a"
@@ -387,7 +390,7 @@ class FlashcardApp(ctk.CTk):
         # ==========================================
         # TERMINAL DE STATUS
         # ==========================================
-        terminal_frame = ctk.CTkFrame(self, fg_color="#0f172a", corner_radius=8, border_width=1, border_color="#334155")
+        terminal_frame = ctk.CTkFrame(self.main_scroll_frame, fg_color="#0f172a", corner_radius=8, border_width=1, border_color="#334155")
         terminal_frame.pack(pady=(0, 20), padx=40, fill="both", expand=True)
 
         # Header do Terminal
